@@ -42,9 +42,28 @@
     <button id="fetch-products">Load Products</button>
     <div id="product-list"></div>
 
+    <h2>Create Product</h2>
+    <form id="create-product-form">
+        <input type="text" id="product-name" placeholder="Product Name" required />
+        <input type="number" id="product-price" placeholder="Price" required />
+        <input type="number" id="product-stock" placeholder="Stock" required />
+        <input type="number" id="product-vendor-id" placeholder="Vendor ID" required />
+        <textarea id="product-description" placeholder="Description" required></textarea>
+        <button type="submit">Create Product</button>
+    </form>
+
+    <h2>Register Sale</h2>
+    <form id="register-sale-form">
+        <input type="number" id="sale-product-id" placeholder="Product ID" required />
+        <input type="number" id="sale-quantity" placeholder="Quantity" required />
+        <input type="number" id="sale-buyer-id" placeholder="Buyer ID" required />
+        <button type="submit">Register Sale</button>
+    </form>
+
     <script>
         const userServiceUrl = "http://localhost:8001"; // User Service URL
         const productServiceUrl = "http://localhost:8002"; // Product Service URL
+        const salesServiceUrl = "http://localhost:8003"; // Sales Service URL
 
         // Register user
         document.getElementById("register-form").addEventListener("submit", async (e) => {
@@ -98,6 +117,41 @@
       `;
                 productList.appendChild(productElement);
             });
+        });
+
+        // Create product
+        document.getElementById("create-product-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const name = document.getElementById("product-name").value;
+            const price = document.getElementById("product-price").value;
+            const stock = document.getElementById("product-stock").value;
+            const vendorId = document.getElementById("product-vendor-id").value;
+            const description = document.getElementById("product-description").value;
+
+            const response = await fetch(`${productServiceUrl}/products`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, price, stock, vendor_id: vendorId, description }),
+            });
+            const data = await response.json();
+            alert("Product Created: " + data.name);
+        });
+
+
+        // Register sale
+        document.getElementById("register-sale-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const productId = document.getElementById("sale-product-id").value;
+            const quantity = document.getElementById("sale-quantity").value;
+            const buyerId = document.getElementById("sale-buyer-id").value;
+
+            const response = await fetch(`${salesServiceUrl}/sales`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ product_id: productId, quantity, buyer_id: buyerId }),
+            });
+            const data = await response.json();
+            alert("Sale Registered: " + data.id);
         });
     </script>
 

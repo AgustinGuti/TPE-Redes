@@ -21,23 +21,45 @@ services:
     networks:
       - microservice-net
 
+  sales-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: salesdb
+    ports:
+      - "5434:5432"
+    networks:
+      - microservice-net
+
   user-service:
     build: ./user-service
     ports:
       - "8001:8001"
     environment:
-      DATABASE_URL: postgresql://myuser:mypassword@user-db:5432/userdata  # Pointing to user-db
+      DATABASE_URL: postgresql://myuser:mypassword@user-db:5432/userdata  
     networks:
       - microservice-net
 
   product-service:
     build: ./product-service
     environment:
-      DATABASE_URL: postgresql://myuser:mypassword@product-db:5432/productdb  # Pointing to product-db
+      DATABASE_URL: postgresql://myuser:mypassword@product-db:5432/productdb 
     ports:
       - "8002:8001"
     depends_on:
       - product-db
+    networks:
+      - microservice-net
+
+  sales-service:
+    build: ./sales-service
+    ports:
+      - "8003:8001"
+    environment:
+      DATABASE_URL: postgresql://myuser:mypassword@sales-db:5432/salesdb
+    depends_on:
+      - sales-db
     networks:
       - microservice-net
 
