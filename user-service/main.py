@@ -1,0 +1,40 @@
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
+
+from database import get_db, engine, Base
+from models import User
+import hashlib
+from schemas import UserSchema
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"], 
+)
+
+@app.on_event("startup")
+def on_startup():
+    Base.metadata.create_all(bind=engine)
+
+@app.post("/users")
+def register_user(user: UserSchema, db: Session = Depends(get_db)):
+    hashed_password = hashlib.sha256(user.password.encode()).hexdigest()
+    db_user = User(name=user.name, password=hashed_password)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@app.post("/login")
+def login_user(user: UserSchema, db: Session = Depends(get_db)):
+    hashed_password = hashlib.sha256(user.password.encode()).hexdigest()
+    db_user = db.query(User).filter(User.name == user.name, User.password == hashed_password).first()
+    if db_user:
+        return {"access_token": "dummy_token"}  # TODO see JWT? Kong
+    else:
+        raise HTTPException(status_code=400, detail="Invalid credentials")

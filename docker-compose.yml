@@ -1,0 +1,46 @@
+services:
+  product-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: productdb
+    ports:
+      - "5432:5432"
+    networks:
+      - microservice-net
+
+  user-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: userdata
+    ports:
+      - "5433:5432"
+    networks:
+      - microservice-net
+
+  user-service:
+    build: ./user-service
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgresql://myuser:mypassword@user-db:5432/userdata  # Pointing to user-db
+    networks:
+      - microservice-net
+
+  product-service:
+    build: ./product-service
+    environment:
+      DATABASE_URL: postgresql://myuser:mypassword@product-db:5432/productdb  # Pointing to product-db
+    ports:
+      - "8002:8001"
+    depends_on:
+      - product-db
+    networks:
+      - microservice-net
+
+networks:
+  microservice-net:
+    driver: bridge

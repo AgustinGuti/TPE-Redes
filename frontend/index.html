@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .product {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+            display: inline-block;
+            width: 200px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Register</h2>
+    <form id="register-form">
+        <input type="text" id="register-name" placeholder="Name" required />
+        <input type="password" id="register-password" placeholder="Password" required />
+        <button type="submit">Register</button>
+    </form>
+
+    <h2>Login</h2>
+    <form id="login-form">
+        <input type="text" id="login-name" placeholder="Name" required />
+        <input type="password" id="login-password" placeholder="Password" required />
+        <button type="submit">Login</button>
+    </form>
+
+    <h2>Products</h2>
+    <button id="fetch-products">Load Products</button>
+    <div id="product-list"></div>
+
+    <script>
+        const userServiceUrl = "http://localhost:8001"; // User Service URL
+        const productServiceUrl = "http://localhost:8002"; // Product Service URL
+
+        // Register user
+        document.getElementById("register-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const name = document.getElementById("register-name").value;
+            const password = document.getElementById("register-password").value;
+
+            const response = await fetch(`${userServiceUrl}/users`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, password }),
+            });
+            const data = await response.json();
+            alert("User Registered: " + data.name);
+        });
+
+        // Login user
+        document.getElementById("login-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const name = document.getElementById("login-name").value;
+            const password = document.getElementById("login-password").value;
+
+            const response = await fetch(`${userServiceUrl}/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, password }),
+            });
+            const data = await response.json();
+            if (data.access_token) {
+                alert("Login Successful");
+                localStorage.setItem("access_token", data.access_token);
+            } else {
+                alert("Login Failed");
+            }
+        });
+
+        // Fetch products
+        document.getElementById("fetch-products").addEventListener("click", async () => {
+            const response = await fetch(`${productServiceUrl}/products`);
+            const products = await response.json();
+            const productList = document.getElementById("product-list");
+            productList.innerHTML = "";
+            products.forEach((product) => {
+                const productElement = document.createElement("div");
+                productElement.classList.add("product");
+                productElement.innerHTML = `
+        <strong>${product.name}</strong><br>
+        Price: $${product.price}<br>
+        Description: ${product.description}<br>
+        Stock: ${product.stock}
+      `;
+                productList.appendChild(productElement);
+            });
+        });
+    </script>
+
+</body>
+
+</html>
