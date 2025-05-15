@@ -38,15 +38,17 @@ services:
       - "8001:8001"
     environment:
       DATABASE_URL: postgresql://myuser:mypassword@user-db:5432/userdata  
+    depends_on:
+      - user-db
     networks:
       - microservice-net
 
   product-service:
     build: ./product-service
-    environment:
-      DATABASE_URL: postgresql://myuser:mypassword@product-db:5432/productdb 
     ports:
       - "8002:8001"
+    environment:
+      DATABASE_URL: postgresql://myuser:mypassword@product-db:5432/productdb 
     depends_on:
       - product-db
     networks:

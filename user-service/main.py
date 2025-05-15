@@ -5,7 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import get_db, engine, Base
 from models import User
 import hashlib
-from schemas import UserSchema
+from schemas import UserCreateSchema
+from schemas import UserLoginSchema
 
 app = FastAPI()
 
@@ -22,19 +23,19 @@ def on_startup():
     Base.metadata.create_all(bind=engine)
 
 @app.post("/users")
-def register_user(user: UserSchema, db: Session = Depends(get_db)):
+def register_user(user: UserCreateSchema, db: Session = Depends(get_db)):
     hashed_password = hashlib.sha256(user.password.encode()).hexdigest()
-    db_user = User(name=user.name, password=hashed_password)
+    db_user = User(name=user.name, password=hashed_password, email=user.email, role="vendor" if user.is_vendor else "customer")
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
 
 @app.post("/login")
-def login_user(user: UserSchema, db: Session = Depends(get_db)):
+def login_user(user: UserLoginSchema, db: Session = Depends(get_db)):
     hashed_password = hashlib.sha256(user.password.encode()).hexdigest()
-    db_user = db.query(User).filter(User.name == user.name, User.password == hashed_password).first()
+    db_user = db.query(User).filter(User.email == user.email, User.password == hashed_password).first()
     if db_user:
-        return {"access_token": "dummy_token"}  # TODO see JWT? Kong
+        return {"access_token": "dummy_token", "role": db_user.role}  # TODO see JWT? Kong. Role will be in JWT
     else:
         raise HTTPException(status_code=400, detail="Invalid credentials")

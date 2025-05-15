@@ -1,0 +1,155 @@
+/* General Body and Layout */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f7fc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+}
+
+/* Top Bar */
+.top-bar {
+    width: 100%;
+    background-color: #333;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+}
+
+.top-bar .logo {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.top-bar .auth-buttons button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.top-bar .auth-buttons button:hover {
+    background-color: #0056b3;
+}
+
+/* Main Container */
+.container {
+    width: 100%;
+    max-width: 1000px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Section Layout */
+.section {
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 40px;
+}
+
+/* Product Styles */
+.product {
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin: 10px;
+    border-radius: 8px;
+    display: inline-block;
+    width: 220px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.product strong {
+    font-size: 18px;
+    color: #333;
+}
+
+.product div {
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+#product-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Authentication Form Styles */
+.auth-form-container {
+    display: none;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+    width: 300px;
+}
+
+input,
+button {
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#fetch-products {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    font-size: 16px;
+    padding: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#fetch-products:hover {
+    background-color: #218838;
+}
+
+/* Hide Action Containers initially */
+#create-product-container,
+#buy-product-container {
+    display: none;
+}
+
+/* You can add some additional styles here for action containers */
+.action-container {
+    width: 100%;
+    max-width: 600px;
+    margin-top: 20px;
+}
+
+
+#register-form label {
+    display: block;
+    margin-top: 10px;
+}

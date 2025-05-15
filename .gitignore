@@ -105,3 +105,6 @@ openapi.json
 
 # VS Code Python extension
 .python-version
+
+
+kuma/kuma*
