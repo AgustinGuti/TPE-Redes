@@ -2,24 +2,18 @@
 
 
 # ──────────────── Arguments ────────────────
-SERVICE_NAME=$1
-SERVICE_IP=$2
-SERVICE_PORT=$3
-DB_IP=$4
-DB_PORT=$5
-
-# ──────────────── Validation ────────────────
-if [ $# -lt 5 ]; then
-  echo "Usage: $0 <service-name> <service-ip> <service-port> <db-ip> <db-port>"
-  exit 1
-fi
+SERVICE_NAME="kong"
+SERVICE_IP="192.168.0.2"
+SERVICE_PORT="8001"
+DB_IP="192.168.0.12"
+DB_PORT="5432" 
 
 # ──────────────── Constants ────────────────
-IMAGE_TAG="${SERVICE_NAME}-img"
-CONTAINER_NAME="kuma-${SERVICE_NAME}"
+IMAGE_TAG="kong:latest"
+CONTAINER_NAME="kuma-kong"
 DB_NAME="${SERVICE_NAME}-db"
 DB_CONTAINER="kuma-${DB_NAME}"
-DB_IMAGE="postgres:15"
+DB_IMAGE="postgres:13"
 
 SERVICE_DIR="${SERVICE_NAME}"
 
@@ -29,7 +23,7 @@ NETWORK="kuma-app-network"
 SERVICE_TOKEN="${TOKEN_DIR}/token-${SERVICE_NAME}"
 DB_TOKEN="${TOKEN_DIR}/token-${DB_NAME}"
 
-SERVICE_DATAPLANE="./dataplane.yaml"
+SERVICE_DATAPLANE="./kong/kong-dp.yaml"
 DB_DATAPLANE="./dataplane.yaml"
 
 mkdir -p "$TOKEN_DIR" "./logs"
@@ -46,51 +40,71 @@ mkdir -p "$TOKEN_DIR" "./logs"
 #   --valid-for 720h \
 #   > "$DB_TOKEN"
 
-# ──────────────── Build Service Image ────────────────
-
-CONTAINER_NAME="kuma-${SERVICE_NAME}"
-DB_CONTAINER_NAME="kuma-${SERVICE_NAME}-db"
 
 # Remove existing containers if they exist
 echo "🧹 Cleaning up existing containers if needed..."
 
-for container in "$CONTAINER_NAME" "$DB_CONTAINER_NAME"; do
+for container in "$CONTAINER_NAME" "$DB_CONTAINER"; do
   if docker ps -a -q -f name="^/${container}$" >/dev/null; then
     echo "🗑️  Removing existing container $container"
     docker rm -f "$container"
   fi
 done
 
-docker build --tag "${IMAGE_TAG}" --file "../$SERVICE_DIR/Dockerfile" "../$SERVICE_DIR"
+KONG_PG_HOST="kong-db"
+KONG_PG_DATABASE="kong"
+KONG_PG_USER="kong"
+KONG_PG_PASSWORD="kong"
 
-# ──────────────── Start DB ────────────────
-echo "🗄️  Starting DB container ${DB_CONTAINER}..."
-docker inspect "$DB_CONTAINER" >/dev/null 2>&1 || \
-docker run -d \
-  --name "$DB_CONTAINER" \
+
+docker run -d --name $DB_CONTAINER \
   --hostname "$DB_NAME" \
   --network "$NETWORK" \
+  -e "POSTGRES_USER=$KONG_PG_USER" \
+  -e "POSTGRES_DB=$KONG_PG_DATABASE" \
+  -e "POSTGRES_PASSWORD=$KONG_PG_PASSWORD" \
   --ip "$DB_IP" \
-  -e POSTGRES_USER=myuser \
-  -e POSTGRES_PASSWORD=mypassword \
-  -e POSTGRES_DB=userdata \
   --volume "$(pwd):/kuma" \
-  "$DB_IMAGE"
+  postgres:13
 
+sleep 5
+echo "🗄️  Starting DB container ${DB_CONTAINER}..."
 
-sleep 1
-
-# ──────────────── Start Service ────────────────
-echo "🚀 Starting service container ${CONTAINER_NAME}..."
-docker run -d \
-  --name "${CONTAINER_NAME}" \
-  --hostname "${SERVICE_NAME}" \
+docker run --rm \
   --network "$NETWORK" \
-  --ip "${SERVICE_IP}" \
-  -e DATABASE_URL="postgresql://myuser:mypassword@${DB_NAME}:${DB_PORT}/userdata" \
+  -e "KONG_DATABASE=postgres" \
+  -e "KONG_PG_HOST=$KONG_PG_HOST" \
+  -e "KONG_PG_DATABASE=$KONG_PG_DATABASE" \
+  -e "KONG_PG_USER=$KONG_PG_USER" \
+  -e "KONG_PG_PASSWORD=$KONG_PG_PASSWORD" \
+  kong:latest kong migrations bootstrap
+
+sleep 5
+
+echo "🚀 Starting service container ${CONTAINER_NAME}..."
+
+docker run -d --name $CONTAINER_NAME \
+  --hostname "$SERVICE_NAME" \
+  --network "$NETWORK" \
+  -e "KONG_DATABASE=postgres" \
+  -e "KONG_PG_HOST=$KONG_PG_HOST" \
+  -e "KONG_PG_DATABASE=$KONG_PG_DATABASE" \
+  -e "KONG_PG_USER=$KONG_PG_USER" \
+  -e "KONG_PG_PASSWORD=$KONG_PG_PASSWORD" \
+  -e "KONG_PROXY_ACCESS_LOG=/dev/stdout" \
+  -e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" \
+  -e "KONG_PROXY_ERROR_LOG=/dev/stderr" \
+  -e "KONG_ADMIN_ERROR_LOG=/dev/stderr" \
+  -e "KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl" \
+  -e "KONG_PG_SSL=disable" \
+  -p 8000:8000 \
+  -p 8443:8443 \
+  -p 8001:8001 \
+  -p 8444:8444 \
+  --ip "$SERVICE_IP" \
   --volume "$(pwd):/kuma" \
-  -p "${SERVICE_PORT}:${SERVICE_PORT}" \
-  "${IMAGE_TAG}"
+  kong:latest
+
 
 # ──────────────── Start Dataplanes ────────────────
 echo "⚙️  Starting kuma-dp for DB..."
@@ -102,5 +116,17 @@ sleep 5
 echo "⚙️  Starting kuma-dp for Service..."
 ./start-kuma-dataplane.sh "$SERVICE_NAME" "$SERVICE_IP" "$SERVICE_PORT" "$SERVICE_DATAPLANE" "$SERVICE_TOKEN"
 
+curl -i -X POST http://localhost:8001/services \
+  --data "name=user-service" \
+  --data "url=http://user-service:8001"
+
+curl -i -X POST http://localhost:8001/services/user-service/routes \
+  --data "paths[]=/users" \
+  --data "methods[]=GET" \
+  --data "methods[]=POST" \
+  --data "methods[]=PUT" \
+  --data "methods[]=DELETE" \
+  --data "methods[]=OPTIONS" \
+  --data "methods[]=PATCH"
 
 echo "✅ ${SERVICE_NAME} and ${DB_NAME} deployed with dataplanes!"

@@ -4,6 +4,7 @@
 chmod +x setup-kuma-control-plane.sh
 chmod +x start-kuma-service.sh
 chmod +x start-kuma-dataplane.sh
+chmod +x kong/start-kong.sh
 
 # Step 1: Start control plane
 ./setup-kuma-control-plane.sh
@@ -24,5 +25,9 @@ for i in $(seq 0 $((SERVICES - 1))); do
   echo "🚀 Setting up $NAME..."
   ./start-kuma-service.sh "$NAME" "$SVC_IP" "$SVC_PORT" "$DB_IP" "$DB_PORT"
 done
+
+# Step 3: Start Kong Gateway
+echo "🚀 Starting Kong Gateway..."
+./start-kong.sh
 
 echo "✅ All services configured!"

@@ -2,7 +2,7 @@ services: [
   {
     name: "user-service",
     service-ip: "192.168.0.3",
-    service-port: 8080,
+    service-port: 8005,
     database-ip: "192.168.0.13",
     database-port: 5432,
   }

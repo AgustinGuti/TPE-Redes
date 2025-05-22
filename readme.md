@@ -1,6 +1,6 @@
 # Requisitos
 
-sudo apt install -y yq
+snap install -y yq
 
 
 

@@ -1,4 +1,4 @@
-const userServiceUrl = "http://localhost:8001"; // User Service URL
+const userServiceUrl = "http://localhost:8000/users"; // User Service URL
 const productServiceUrl = "http://localhost:8002"; // Product Service URL
 
 // Elements
@@ -43,6 +43,7 @@ document.getElementById("register-form").addEventListener("submit", async (e) =>
     loginFormContainer.style.display = 'block';
     registerFormContainer.style.display = 'none';
 });
+
 
 // Login user
 document.getElementById("login-form").addEventListener("submit", async (e) => {

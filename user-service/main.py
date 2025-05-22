@@ -24,16 +24,22 @@ def on_startup():
 
 @app.post("/users")
 def register_user(user: UserCreateSchema, db: Session = Depends(get_db)):
-    hashed_password = hashlib.sha256(user.password.encode()).hexdigest()
+    hashed_password = hashlib.md5(user.password.encode()).hexdigest()
     db_user = User(name=user.name, password=hashed_password, email=user.email, role="vendor" if user.is_vendor else "customer")
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
 
+@app.get("/users")
+def get_users(db: Session = Depends(get_db)):
+    users = [User(id=1, password="hashed", name="Alice", role="testrole", email="alice@example.com"),
+              User(id=2, password="hashed", name="Bob", role="testrole", email="bob@example.com")]
+    return users
+
 @app.post("/login")
 def login_user(user: UserLoginSchema, db: Session = Depends(get_db)):
-    hashed_password = hashlib.sha256(user.password.encode()).hexdigest()
+    hashed_password = hashlib.md5(user.password.encode()).hexdigest()
     db_user = db.query(User).filter(User.email == user.email, User.password == hashed_password).first()
     if db_user:
         return {"access_token": "dummy_token", "role": db_user.role}  # TODO see JWT? Kong. Role will be in JWT

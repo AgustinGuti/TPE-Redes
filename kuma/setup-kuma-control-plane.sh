@@ -64,4 +64,32 @@ name: default
 meshServices:
   mode: Exclusive' | kumactl apply -f -
 
+SERVICE_FILE="./service-config.yaml"
+
+SERVICES=$(yq eval '.services | length' "$SERVICE_FILE")
+
+echo "🔐 Generating dataplane tokens..."
+for ((i=0; i<SERVICES; i++)); do
+  SERVICE_NAME=$(yq eval ".services[$i].name" "$SERVICE_FILE")
+  kumactl generate dataplane-token \
+    --tag "kuma.io/service=${SERVICE_NAME}" \
+    --valid-for 720h \
+    > "./tokens/token-${SERVICE_NAME}"
+
+    kumactl generate dataplane-token \
+    --tag "kuma.io/service=${SERVICE_NAME}-db" \
+    --valid-for 720h \
+    > "./tokens/token-${SERVICE_NAME}-db"
+done
+
+ kumactl generate dataplane-token \
+    --tag "kuma.io/service=kong" \
+    --valid-for 720h \
+    > "./tokens/token-kong"
+
+    kumactl generate dataplane-token \
+    --tag "kuma.io/service=kong-db" \
+    --valid-for 720h \
+    > "./tokens/token-kong-db"
+
 echo "✅ Control plane setup complete."
