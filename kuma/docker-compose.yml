@@ -1,0 +1,289 @@
+version: '3.8'
+
+services:
+  # Control Plane
+  control-plane:
+    image: kumahq/kuma-cp:2.10.1
+    hostname: control-plane
+    command: run
+    networks:
+      kuma-network:
+        ipv4_address: 192.168.0.1
+    ports:
+      - "25681:5681"  # Admin API
+      - "5678:5678"   # Data plane API
+    volumes:
+      - ./kuma:/kuma
+      - ./tokens:/tokens
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:5681/healthy"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    environment:
+      - KUMA_GENERAL_ADVERTISED_HOSTNAME=control-plane
+
+  # Init Container - runs once to set up tokens and configuration
+  init:
+    image: kumahq/kumactl:2.10.1
+    depends_on:
+      control-plane:
+        condition: service_healthy
+    networks:
+      - kuma-network
+    volumes:
+      - ./tokens:/tokens
+      - ./kuma:/kuma
+    command: >
+      sh -c "
+        echo 'Waiting for control plane...' &&
+        sleep 5 &&
+        KUMA_ADMIN_TOKEN=$$(wget -q -O - http://control-plane:5681/global-secrets/admin-user-token | jq -r .data | base64 -d) &&
+        echo 'Configuring kumactl...' &&
+        kumactl config control-planes add --name kuma-app-network --address http://control-plane:5681 --auth-type tokens --auth-conf token=$$KUMA_ADMIN_TOKEN --overwrite --skip-verify &&
+        echo 'Setting up default mesh config...' &&
+        echo 'type: Mesh
+        name: default
+        meshServices:
+          mode: Exclusive' | kumactl apply -f - &&
+        echo 'Generating tokens...' &&
+        mkdir -p /tokens &&
+        kumactl generate dataplane-token --tag kuma.io/service=user-service --valid-for 720h > /tokens/token-user-service &&
+        kumactl generate dataplane-token --tag kuma.io/service=user-service-db --valid-for 720h > /tokens/token-user-service-db &&
+        kumactl generate dataplane-token --tag kuma.io/service=kong --valid-for 720h > /tokens/token-kong &&
+        kumactl generate dataplane-token --tag kuma.io/service=kong-db --valid-for 720h > /tokens/token-kong-db &&
+        echo 'Init complete'
+      "
+
+  # User Service Database
+  user-service-db:
+    image: postgres:15
+    hostname: user-service-db
+    networks:
+      kuma-network:
+        ipv4_address: 192.168.0.13
+    environment:
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=mypassword
+      - POSTGRES_DB=userdata
+    volumes:
+      - ./kuma:/kuma
+      - user_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "myuser"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
+  # User Service
+  user-service:
+    image: user-service-img
+    build:
+      context: ../user-service
+      dockerfile: Dockerfile
+    hostname: user-service
+    networks:
+      kuma-network:
+        ipv4_address: 192.168.0.3
+    environment:
+      - DATABASE_URL=postgresql://myuser:mypassword@user-service-db:5432/userdata
+    volumes:
+      - ./kuma:/kuma
+    depends_on:
+      user-service-db:
+        condition: service_healthy
+
+  # User Service Dataplane
+  user-service-dp:
+    image: kumahq/kuma-dp:2.10.1
+    networks:
+      - kuma-network
+    volumes:
+      - ./kuma:/kuma
+      - ./tokens:/tokens
+      - ./dataplane-user-service.yaml:/dataplane.yaml
+    command: >
+      run
+      --cp-address https://control-plane:5678
+      --dataplane-token-file /tokens/token-user-service
+      --dataplane-file /dataplane.yaml
+      --dataplane-var name=user-service
+      --dataplane-var address=192.168.0.3
+      --dataplane-var port=8001
+    depends_on:
+      - user-service
+      - init
+    cap_add:
+      - NET_ADMIN
+
+  # User DB Dataplane
+  user-service-db-dp:
+    image: kumahq/kuma-dp:2.10.1
+    networks:
+      - kuma-network
+    volumes:
+      - ./kuma:/kuma
+      - ./tokens:/tokens
+      - ./dataplane-user-service-db.yaml:/dataplane.yaml
+    command: >
+      run
+      --cp-address https://control-plane:5678
+      --dataplane-token-file /tokens/token-user-service-db
+      --dataplane-file /dataplane.yaml
+      --dataplane-var name=user-service-db
+      --dataplane-var address=192.168.0.4
+      --dataplane-var port=5432
+    depends_on:
+      - user-service-db
+      - init
+    cap_add:
+      - NET_ADMIN
+
+  # Kong Database
+  kong-db:
+    image: postgres:13
+    hostname: kong-db
+    networks:
+      kuma-network:
+        ipv4_address: 192.168.0.6
+    environment:
+      - POSTGRES_USER=kong
+      - POSTGRES_PASSWORD=kong
+      - POSTGRES_DB=kong
+    volumes:
+      - kong_db_data:/var/lib/postgresql/data
+      - ./kuma:/kuma
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kong"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
+  # Kong Migration
+  kong-migration:
+    image: kong:latest
+    networks:
+      - kuma-network
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong-db
+      - KONG_PG_DATABASE=kong
+      - KONG_PG_USER=kong
+      - KONG_PG_PASSWORD=kong
+    command: "kong migrations bootstrap"
+    depends_on:
+      kong-db:
+        condition: service_healthy
+
+  # Kong API Gateway
+  kong:
+    image: kong:latest
+    hostname: kong
+    networks:
+      kuma-network:
+        ipv4_address: 192.168.0.5
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong-db
+      - KONG_PG_DATABASE=kong
+      - KONG_PG_USER=kong
+      - KONG_PG_PASSWORD=kong
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001
+      - KONG_PROXY_LISTEN=0.0.0.0:8000
+    volumes:
+      - ./kuma:/kuma
+      - ./kong/kong.conf:/etc/kong/kong.conf
+    ports:
+      - "8000:8000"  # Proxy
+      - "8001:8001"  # Admin API
+    depends_on:
+      kong-migration:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kong Dataplane
+  kong-dp:
+    image: kumahq/kuma-dp:2.10.1
+    networks:
+      - kuma-network
+    volumes:
+      - ./kuma:/kuma
+      - ./tokens:/tokens
+      - ./kong/kong-dp.yaml:/dataplane.yaml
+    command: >
+      run
+      --cp-address https://control-plane:5678
+      --dataplane-token-file /tokens/token-kong
+      --dataplane-file /dataplane.yaml
+      --dataplane-var name=kong
+      --dataplane-var address=192.168.0.5
+      --dataplane-var port=8000
+    depends_on:
+      - kong
+      - init
+    cap_add:
+      - NET_ADMIN
+
+  # Kong DB Dataplane
+  kong-db-dp:
+    image: kumahq/kuma-dp:2.10.1
+    networks:
+      - kuma-network
+    volumes:
+      - ./kuma:/kuma
+      - ./tokens:/tokens
+      - ./dataplane-kong-db.yaml:/dataplane.yaml
+    command: >
+      run
+      --cp-address https://control-plane:5678
+      --dataplane-token-file /tokens/token-kong-db
+      --dataplane-file /dataplane.yaml
+      --dataplane-var name=kong-db
+      --dataplane-var address=192.168.0.6
+      --dataplane-var port=5432
+    depends_on:
+      - kong-db
+      - init
+    cap_add:
+      - NET_ADMIN
+
+  # Kong configuration
+  kong-config:
+    image: curlimages/curl:latest
+    networks:
+      - kuma-network
+    depends_on:
+      kong:
+        condition: service_healthy
+    command: >
+      sh -c "
+        sleep 10 && 
+        curl -i -X POST http://kong:8001/services --data 'name=user-service' --data 'url=http://user-service:8001' &&
+        curl -i -X POST http://kong:8001/services/user-service/routes --data 'paths[]=/users' --data 'methods[]=GET' --data 'methods[]=POST' --data 'methods[]=PUT' --data 'methods[]=DELETE' --data 'methods[]=OPTIONS' --data 'methods[]=PATCH'
+      "
+
+networks:
+  kuma-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.0.0/24
+          gateway: 192.168.0.254
+
+volumes:
+  user_db_data:
+  kong_db_data:
