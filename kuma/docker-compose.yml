@@ -1,31 +1,35 @@
-version: '3.8'
-
 services:
-  # Control Plane
   control-plane:
-    image: kumahq/kuma-cp:2.10.1
-    hostname: control-plane
-    command: run
+    build:
+      context: .
+      dockerfile: Dockerfile.control-plane
+    container_name: kuma-control-plane
+    ports:
+      - "5681:5681"  # Admin API
+    volumes:
+      - ./tokens:/tokens
+      - ./control_plane:/control_plane
+      - ./certs:/certs
+    environment:
+      - KUMA_GENERAL_TLS_CERT_FILE=/certs/server.crt
+      - KUMA_GENERAL_TLS_KEY_FILE=/certs/server.key
+ 
     networks:
       kuma-network:
         ipv4_address: 192.168.0.1
-    ports:
-      - "25681:5681"  # Admin API
-      - "5678:5678"   # Data plane API
-    volumes:
-      - ./kuma:/kuma
-      - ./tokens:/tokens
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:5681/healthy"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-    environment:
-      - KUMA_GENERAL_ADVERTISED_HOSTNAME=control-plane
+      test: ["CMD", "curl", "-f", "http://localhost:5681/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Init Container - runs once to set up tokens and configuration
+
+      
+  # Init Container with shell support
   init:
-    image: kumahq/kumactl:2.10.1
+    build:
+      context: .
+      dockerfile: init.Dockerfile
     depends_on:
       control-plane:
         condition: service_healthy
@@ -34,26 +38,8 @@ services:
     volumes:
       - ./tokens:/tokens
       - ./kuma:/kuma
-    command: >
-      sh -c "
-        echo 'Waiting for control plane...' &&
-        sleep 5 &&
-        KUMA_ADMIN_TOKEN=$$(wget -q -O - http://control-plane:5681/global-secrets/admin-user-token | jq -r .data | base64 -d) &&
-        echo 'Configuring kumactl...' &&
-        kumactl config control-planes add --name kuma-app-network --address http://control-plane:5681 --auth-type tokens --auth-conf token=$$KUMA_ADMIN_TOKEN --overwrite --skip-verify &&
-        echo 'Setting up default mesh config...' &&
-        echo 'type: Mesh
-        name: default
-        meshServices:
-          mode: Exclusive' | kumactl apply -f - &&
-        echo 'Generating tokens...' &&
-        mkdir -p /tokens &&
-        kumactl generate dataplane-token --tag kuma.io/service=user-service --valid-for 720h > /tokens/token-user-service &&
-        kumactl generate dataplane-token --tag kuma.io/service=user-service-db --valid-for 720h > /tokens/token-user-service-db &&
-        kumactl generate dataplane-token --tag kuma.io/service=kong --valid-for 720h > /tokens/token-kong &&
-        kumactl generate dataplane-token --tag kuma.io/service=kong-db --valid-for 720h > /tokens/token-kong-db &&
-        echo 'Init complete'
-      "
+      - ./init.sh:/init.sh
+    command: /init.sh
 
   # User Service Database
   user-service-db:
@@ -65,7 +51,7 @@ services:
     environment:
       - POSTGRES_USER=myuser
       - POSTGRES_PASSWORD=mypassword
-      - POSTGRES_DB=userdata
+      - POSTGRES_DB=myuser
     volumes:
       - ./kuma:/kuma
       - user_db_data:/var/lib/postgresql/data
@@ -89,12 +75,14 @@ services:
       kuma-network:
         ipv4_address: 192.168.0.3
     environment:
-      - DATABASE_URL=postgresql://myuser:mypassword@user-service-db:5432/userdata
+      - DATABASE_URL=postgresql://myuser:mypassword@user-service-db:5432/myuser
     volumes:
       - ./kuma:/kuma
     depends_on:
       user-service-db:
         condition: service_healthy
+
+
 
   # User Service Dataplane
   user-service-dp:
@@ -104,12 +92,13 @@ services:
     volumes:
       - ./kuma:/kuma
       - ./tokens:/tokens
-      - ./dataplane-user-service.yaml:/dataplane.yaml
+      - ./certs:/certs
     command: >
       run
       --cp-address https://control-plane:5678
+      --ca-cert-file /certs/server.crt
       --dataplane-token-file /tokens/token-user-service
-      --dataplane-file /dataplane.yaml
+      --dataplane-file /kuma/dataplane.yaml
       --dataplane-var name=user-service
       --dataplane-var address=192.168.0.3
       --dataplane-var port=8001
@@ -127,14 +116,15 @@ services:
     volumes:
       - ./kuma:/kuma
       - ./tokens:/tokens
-      - ./dataplane-user-service-db.yaml:/dataplane.yaml
+      - ./certs:/certs
     command: >
       run
       --cp-address https://control-plane:5678
+      --ca-cert-file /certs/server.crt
       --dataplane-token-file /tokens/token-user-service-db
-      --dataplane-file /dataplane.yaml
+      --dataplane-file /kuma/dataplane.yaml
       --dataplane-var name=user-service-db
-      --dataplane-var address=192.168.0.4
+      --dataplane-var address=192.168.0.13
       --dataplane-var port=5432
     depends_on:
       - user-service-db
@@ -148,7 +138,7 @@ services:
     hostname: kong-db
     networks:
       kuma-network:
-        ipv4_address: 192.168.0.6
+        ipv4_address: 192.168.0.12
     environment:
       - POSTGRES_USER=kong
       - POSTGRES_PASSWORD=kong
@@ -187,7 +177,7 @@ services:
     hostname: kong
     networks:
       kuma-network:
-        ipv4_address: 192.168.0.5
+        ipv4_address: 192.168.0.2
     environment:
       - KONG_DATABASE=postgres
       - KONG_PG_HOST=kong-db
@@ -223,14 +213,16 @@ services:
     volumes:
       - ./kuma:/kuma
       - ./tokens:/tokens
-      - ./kong/kong-dp.yaml:/dataplane.yaml
+      - ./kong/kong-dp.yaml:/kong/kong-dp.yaml
+      - ./certs:/certs
     command: >
       run
       --cp-address https://control-plane:5678
+      --ca-cert-file /certs/server.crt
       --dataplane-token-file /tokens/token-kong
-      --dataplane-file /dataplane.yaml
+      --dataplane-file /kong/kong-dp.yaml
       --dataplane-var name=kong
-      --dataplane-var address=192.168.0.5
+      --dataplane-var address=192.168.0.2
       --dataplane-var port=8000
     depends_on:
       - kong
@@ -246,14 +238,15 @@ services:
     volumes:
       - ./kuma:/kuma
       - ./tokens:/tokens
-      - ./dataplane-kong-db.yaml:/dataplane.yaml
+      - ./certs:/certs
     command: >
       run
       --cp-address https://control-plane:5678
+      --ca-cert-file /certs/server.crt
       --dataplane-token-file /tokens/token-kong-db
-      --dataplane-file /dataplane.yaml
+      --dataplane-file /kuma/dataplane.yaml
       --dataplane-var name=kong-db
-      --dataplane-var address=192.168.0.6
+      --dataplane-var address=192.168.0.12
       --dataplane-var port=5432
     depends_on:
       - kong-db
@@ -271,10 +264,70 @@ services:
         condition: service_healthy
     command: >
       sh -c "
-        sleep 10 && 
+        curl -i -X POST http://kong:8001/services --data 'name=kuma' --data 'url=http://control-plane:5681' &&
+        curl -i -X POST http://kong:8001/services/kuma/routes --data 'strip_path=false' --data 'paths[]=/mesh-insights' --data 'paths[]=/global-insight' --data 'paths[]=/gui' --data 'paths[]=/meshes' --data 'paths[]=/dataplanes' --data 'paths[]=/status' --data 'paths[]=/policies' --data 'paths[]=/zones' &&
+      
         curl -i -X POST http://kong:8001/services --data 'name=user-service' --data 'url=http://user-service:8001' &&
-        curl -i -X POST http://kong:8001/services/user-service/routes --data 'paths[]=/users' --data 'methods[]=GET' --data 'methods[]=POST' --data 'methods[]=PUT' --data 'methods[]=DELETE' --data 'methods[]=OPTIONS' --data 'methods[]=PATCH'
+        curl -i -X POST http://kong:8001/services/user-service/routes \
+          --data "paths[]=/users" \
+          --data "methods[]=GET" \
+          --data "methods[]=POST" \
+          --data "methods[]=PUT" \
+          --data "methods[]=DELETE" \
+          --data "methods[]=OPTIONS" \
+          --data "methods[]=PATCH" &&
+
+        curl -i -X POST http://kong:8001/services --data 'name=user-service' --data 'url=http://user-service:8001' &&
+        curl -i -X POST http://kong:8001/services/user-service/routes --data 'strip_path=false' --data 'paths[]=/users' --data 'methods[]=GET' --data 'methods[]=POST' --data 'methods[]=PUT' --data 'methods[]=DELETE' --data 'methods[]=OPTIONS' --data 'methods[]=PATCH'
       "
+
+  # User Service Transparent Proxy Setup
+  user-service-tp-setup:
+    image: kumahq/kumactl:2.10.1
+    network_mode: "service:user-service"
+    depends_on:
+      - user-service
+    volumes:
+      - ./kuma:/kuma
+    command: >
+      sh -c "
+        kumactl install transparent-proxy \
+        --config-file /kuma/config-transparent-proxy.yaml
+      "
+    cap_add:
+      - NET_ADMIN
+
+  # Kong Transparent Proxy Setup# User Service DB Transparent Proxy Setup
+  user-service-db-tp-setup:
+    image: kumahq/kumactl:2.10.1
+    network_mode: "service:user-service-db"
+    depends_on:
+      - user-service-db
+    volumes:
+      - ./kuma:/kuma
+    command: >
+      sh -c "
+        kumactl install transparent-proxy \
+        --config-file /kuma/config-transparent-proxy.yaml
+      "
+    cap_add:
+      - NET_ADMIN
+
+  # Kong DB Transparent Proxy Setup
+  kong-db-tp-setup:
+    image: kumahq/kumactl:2.10.1
+    network_mode: "service:kong-db"
+    depends_on:
+      - kong-db
+    volumes:
+      - ./kuma:/kuma
+    command: >
+      sh -c "
+        kumactl install transparent-proxy \
+        --config-file /kuma/config-transparent-proxy.yaml
+      "
+    cap_add:
+      - NET_ADMIN
 
 networks:
   kuma-network:
@@ -283,6 +336,7 @@ networks:
       config:
         - subnet: 192.168.0.0/24
           gateway: 192.168.0.254
+          ip_range: 192.168.0.96/28  # Limits auto assignments to 192.168.0.100-115
 
 volumes:
   user_db_data:

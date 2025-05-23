@@ -1,0 +1,13 @@
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y curl wget jq
+
+# Instala Kuma manualmente
+RUN curl -L https://kuma.io/installer.sh -o /installer.sh && \
+    bash /installer.sh && \
+    mv kuma-*/bin/* /usr/local/bin/
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

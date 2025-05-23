@@ -107,5 +107,9 @@ openapi.json
 .python-version
 
 
-kuma/kuma*
-kuma/tokens*
+kuma/kuma-*
+kuma/kuma/*
+kuma/tokens/
+kuma/certs/
+
+!kuma/kuma/*.yaml
