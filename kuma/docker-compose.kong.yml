@@ -1,0 +1,132 @@
+services:
+  kong-db:
+    image: postgres:13
+    hostname: kong-db
+    networks:
+      kuma-network:
+        ipv4_address: 192.168.0.12
+    environment:
+      - POSTGRES_USER=kong
+      - POSTGRES_PASSWORD=kong
+      - POSTGRES_DB=kong
+    volumes:
+      - kong_db_data:/var/lib/postgresql/data
+      - ./kuma:/kuma
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kong"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
+  kong-migration:
+    image: kong:latest
+    networks:
+      - kuma-network
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong-db
+      - KONG_PG_DATABASE=kong
+      - KONG_PG_USER=kong
+      - KONG_PG_PASSWORD=kong
+    command: "kong migrations bootstrap"
+    depends_on:
+      kong-db:
+        condition: service_healthy
+
+  kong:
+    image: kong:latest
+    hostname: kong
+    networks:
+      kuma-network:
+        ipv4_address: 192.168.0.2
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong-db
+      - KONG_PG_DATABASE=kong
+      - KONG_PG_USER=kong
+      - KONG_PG_PASSWORD=kong
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001
+      - KONG_PROXY_LISTEN=0.0.0.0:8000
+    volumes:
+      - ./kuma:/kuma
+      - ./kong/kong.conf:/etc/kong/kong.conf
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    depends_on:
+      kong-migration:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kong-dp:
+    image: kumahq/kuma-dp:2.10.1
+    networks:
+      - kuma-network
+    volumes:
+      - ./kuma:/kuma
+      - ./tokens:/tokens
+      - ./kong/kong-dp.yaml:/kong/kong-dp.yaml
+      - ./certs:/certs
+    command: >
+      run
+      --cp-address https://control-plane:5678
+      --ca-cert-file /certs/server.crt
+      --dataplane-token-file /tokens/token-kong
+      --dataplane-file /kong/kong-dp.yaml
+      --dataplane-var name=kong
+      --dataplane-var address=192.168.0.2
+      --dataplane-var port=8000
+    depends_on:
+      - kong
+      - init
+    cap_add:
+      - NET_ADMIN
+
+  kong-db-dp:
+    image: kumahq/kuma-dp:2.10.1
+    networks:
+      - kuma-network
+    volumes:
+      - ./kuma:/kuma
+      - ./tokens:/tokens
+      - ./certs:/certs
+    command: >
+      run
+      --cp-address https://control-plane:5678
+      --ca-cert-file /certs/server.crt
+      --dataplane-token-file /tokens/token-kong-db
+      --dataplane-file /kuma/dataplane.yaml
+      --dataplane-var name=kong-db
+      --dataplane-var address=192.168.0.12
+      --dataplane-var port=5432
+    depends_on:
+      - kong-db
+      - init
+    cap_add:
+      - NET_ADMIN
+
+  kong-db-tp-setup:
+    image: kumahq/kumactl:2.10.1
+    network_mode: "service:kong-db"
+    depends_on:
+      - kong-db
+    volumes:
+      - ./kuma:/kuma
+    command: >
+      sh -c "
+        kumactl install transparent-proxy \
+        --config-file /kuma/config-transparent-proxy.yaml
+      "
+    cap_add:
+      - NET_ADMIN

@@ -1,0 +1,115 @@
+services:
+  user-service-db:
+    image: postgres:15
+    hostname: user-service-db
+    networks:
+      kuma-network:
+        ipv4_address: 192.168.0.13
+    environment:
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=mypassword
+      - POSTGRES_DB=myuser
+    volumes:
+      - ./kuma:/kuma
+      - user_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "myuser"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
+  user-service:
+    image: user-service-img
+    build:
+      context: ../user-service
+      dockerfile: Dockerfile
+    hostname: user-service
+    networks:
+      kuma-network:
+        ipv4_address: 192.168.0.3
+    environment:
+      - DATABASE_URL=postgresql://myuser:mypassword@user-service-db:5432/myuser
+    volumes:
+      - ./kuma:/kuma
+    depends_on:
+      user-service-db:
+        condition: service_healthy
+
+  user-service-dp:
+    image: kumahq/kuma-dp:2.10.1
+    networks:
+      - kuma-network
+    volumes:
+      - ./kuma:/kuma
+      - ./tokens:/tokens
+      - ./certs:/certs
+    command: >
+      run
+      --cp-address https://control-plane:5678
+      --ca-cert-file /certs/server.crt
+      --dataplane-token-file /tokens/token-user-service
+      --dataplane-file /kuma/dataplane.yaml
+      --dataplane-var name=user-service
+      --dataplane-var address=192.168.0.3
+      --dataplane-var port=8001
+    depends_on:
+      - user-service
+      - init
+    cap_add:
+      - NET_ADMIN
+
+  user-service-db-dp:
+    image: kumahq/kuma-dp:2.10.1
+    networks:
+      - kuma-network
+    volumes:
+      - ./kuma:/kuma
+      - ./tokens:/tokens
+      - ./certs:/certs
+    command: >
+      run
+      --cp-address https://control-plane:5678
+      --ca-cert-file /certs/server.crt
+      --dataplane-token-file /tokens/token-user-service-db
+      --dataplane-file /kuma/dataplane.yaml
+      --dataplane-var name=user-service-db
+      --dataplane-var address=192.168.0.13
+      --dataplane-var port=5432
+    depends_on:
+      - user-service-db
+      - init
+    cap_add:
+      - NET_ADMIN
+
+  user-service-tp-setup:
+    image: kumahq/kumactl:2.10.1
+    network_mode: "service:user-service"
+    depends_on:
+      - user-service
+    volumes:
+      - ./kuma:/kuma
+    command: >
+      sh -c "
+        kumactl install transparent-proxy \
+        --config-file /kuma/config-transparent-proxy.yaml
+      "
+    cap_add:
+      - NET_ADMIN
+
+  user-service-db-tp-setup:
+    image: kumahq/kumactl:2.10.1
+    network_mode: "service:user-service-db"
+    depends_on:
+      - user-service-db
+    volumes:
+      - ./kuma:/kuma
+    command: >
+      sh -c "
+        kumactl install transparent-proxy \
+        --config-file /kuma/config-transparent-proxy.yaml
+      "
+    cap_add:
+      - NET_ADMIN

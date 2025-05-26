@@ -1,0 +1,15 @@
+services:
+  init:
+    build:
+      context: .
+      dockerfile: init.Dockerfile
+    depends_on:
+      control-plane:
+        condition: service_healthy
+    networks:
+      - kuma-network
+    volumes:
+      - ./tokens:/tokens
+      - ./kuma:/kuma
+      - ./init.sh:/init.sh
+    command: /init.sh

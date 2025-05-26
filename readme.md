@@ -1,3 +1,13 @@
+# Docker Compose command
+
+docker compose -f docker-compose.yml \
+               -f docker-compose.init.yml \
+               -f docker-compose.user.yml \
+               -f docker-compose.kong.yml \
+               -f docker-compose.kong-config.yml \
+               up --build
+
+
 # Requisitos
 
 snap install -y yq
