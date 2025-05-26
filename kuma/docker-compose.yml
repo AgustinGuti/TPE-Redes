@@ -36,3 +36,4 @@ volumes:
   user_db_data:
   kong_db_data:
   product_db_data:
+  sales_db_data:

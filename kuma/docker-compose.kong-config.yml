@@ -30,4 +30,14 @@ services:
           --data 'methods[]=DELETE' \
           --data 'methods[]=OPTIONS' \
           --data 'methods[]=PATCH'
+        curl -i -X POST http://kong:8001/services --data 'name=sales-service' --data 'url=http://sales-service:8001' &&
+        curl -i -X POST http://kong:8001/services/sales-service/routes \
+          --data 'strip_path=false' \
+          --data 'paths[]=/sales' \
+          --data 'methods[]=GET' \
+          --data 'methods[]=POST' \
+          --data 'methods[]=PUT' \
+          --data 'methods[]=DELETE' \
+          --data 'methods[]=OPTIONS' \
+          --data 'methods[]=PATCH'
       "
