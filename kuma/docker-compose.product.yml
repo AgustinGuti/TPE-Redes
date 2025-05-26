@@ -1,0 +1,115 @@
+services:
+  product-service-db:
+    image: postgres:15
+    hostname: product-service-db
+    networks:
+      kuma-network:
+        ipv4_address: 192.168.0.15
+    environment:
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=mypassword
+      - POSTGRES_DB=myuser
+    volumes:
+      - ./kuma:/kuma
+      - product_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "myuser"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
+  product-service:
+    image: product-service-img
+    build:
+      context: ../product-service
+      dockerfile: Dockerfile
+    hostname: product-service
+    networks:
+      kuma-network:
+        ipv4_address: 192.168.0.5
+    environment:
+      - DATABASE_URL=postgresql://myuser:mypassword@product-service-db:5432/myuser
+    volumes:
+      - ./kuma:/kuma
+    depends_on:
+      product-service-db:
+        condition: service_healthy
+
+  product-service-dp:
+    image: kumahq/kuma-dp:2.10.1
+    networks:
+      - kuma-network
+    volumes:
+      - ./kuma:/kuma
+      - ./tokens:/tokens
+      - ./certs:/certs
+    command: >
+      run
+      --cp-address https://control-plane:5678
+      --ca-cert-file /certs/server.crt
+      --dataplane-token-file /tokens/token-product-service
+      --dataplane-file /kuma/dataplane.yaml
+      --dataplane-var name=product-service
+      --dataplane-var address=192.168.0.5
+      --dataplane-var port=8001
+    depends_on:
+      - product-service
+      - init
+    cap_add:
+      - NET_ADMIN
+
+  product-service-db-dp:
+    image: kumahq/kuma-dp:2.10.1
+    networks:
+      - kuma-network
+    volumes:
+      - ./kuma:/kuma
+      - ./tokens:/tokens
+      - ./certs:/certs
+    command: >
+      run
+      --cp-address https://control-plane:5678
+      --ca-cert-file /certs/server.crt
+      --dataplane-token-file /tokens/token-product-service-db
+      --dataplane-file /kuma/dataplane.yaml
+      --dataplane-var name=product-service-db
+      --dataplane-var address=192.168.0.15
+      --dataplane-var port=5432
+    depends_on:
+      - product-service-db
+      - init
+    cap_add:
+      - NET_ADMIN
+
+  product-service-tp-setup:
+    image: kumahq/kumactl:2.10.1
+    network_mode: "service:product-service"
+    depends_on:
+      - product-service
+    volumes:
+      - ./kuma:/kuma
+    command: >
+      sh -c "
+        kumactl install transparent-proxy \
+        --config-file /kuma/config-transparent-proxy.yaml
+      "
+    cap_add:
+      - NET_ADMIN
+
+  product-service-db-tp-setup:
+    image: kumahq/kumactl:2.10.1
+    network_mode: "service:product-service-db"
+    depends_on:
+      - product-service-db
+    volumes:
+      - ./kuma:/kuma
+    command: >
+      sh -c "
+        kumactl install transparent-proxy \
+        --config-file /kuma/config-transparent-proxy.yaml
+      "
+    cap_add:
+      - NET_ADMIN

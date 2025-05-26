@@ -32,6 +32,8 @@ echo "Generating tokens..."
 mkdir -p /tokens
 kumactl generate dataplane-token --tag kuma.io/service=user-service --valid-for 720h  > /tokens/token-user-service
 kumactl generate dataplane-token --tag kuma.io/service=user-service-db --valid-for 720h  > /tokens/token-user-service-db
+kumactl generate dataplane-token --tag kuma.io/service=product-service --valid-for 720h  > /tokens/token-product-service
+kumactl generate dataplane-token --tag kuma.io/service=product-service-db --valid-for 720h  > /tokens/token-product-service-db
 kumactl generate dataplane-token --tag kuma.io/service=kong --valid-for 720h  > /tokens/token-kong
 kumactl generate dataplane-token --tag kuma.io/service=kong-db --valid-for 720h > /tokens/token-kong-db
 

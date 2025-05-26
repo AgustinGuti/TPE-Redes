@@ -1,5 +1,5 @@
 const userServiceUrl = "http://localhost:8000/users"; // User Service URL
-const productServiceUrl = "http://localhost:8002"; // Product Service URL
+const productServiceUrl = "http://localhost:8000/products"; // Product Service URL
 
 // Elements
 const loginBtn = document.getElementById("login-btn");
@@ -71,7 +71,7 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
 
 // Fetch and display products
 fetchProductsBtn.addEventListener("click", async () => {
-    const response = await fetch(`${productServiceUrl}/products`);
+    const response = await fetch(`${productServiceUrl}`);
     const products = await response.json();
     productList.innerHTML = ""; // Clear existing products
     products.forEach((product) => {
@@ -98,7 +98,7 @@ fetchProductsBtn.addEventListener("click", async () => {
         const vendorId = document.getElementById("product-vendor-id").value;
         const description = document.getElementById("product-description").value;
 
-        const response = await fetch(`${productServiceUrl}/products`, {
+        const response = await fetch(`${productServiceUrl}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ name, price, stock, vendor_id: vendorId, description }),
