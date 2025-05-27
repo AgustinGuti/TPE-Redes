@@ -33,7 +33,7 @@ document.getElementById("register-form").addEventListener("submit", async (e) =>
     const password = document.getElementById("register-password").value;
     const isVendor = document.getElementById("register-vendor").checked;
 
-    const response = await fetch(`${userServiceUrl}/users`, {
+    const response = await fetch(`${userServiceUrl}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, password, email, is_vendor: isVendor }),

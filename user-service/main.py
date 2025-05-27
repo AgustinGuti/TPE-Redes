@@ -37,7 +37,7 @@ def get_users(db: Session = Depends(get_db)):
               User(id=2, password="hashed", name="Bob", role="testrole", email="bob@example.com")]
     return users
 
-@app.post("/login")
+@app.post("/users/login")
 def login_user(user: UserLoginSchema, db: Session = Depends(get_db)):
     hashed_password = hashlib.md5(user.password.encode()).hexdigest()
     db_user = db.query(User).filter(User.email == user.email, User.password == hashed_password).first()
