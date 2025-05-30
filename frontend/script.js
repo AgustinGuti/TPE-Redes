@@ -71,7 +71,20 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
 
 // Fetch and display products
 fetchProductsBtn.addEventListener("click", async () => {
-    const response = await fetch(`${productServiceUrl}`);
+    const token = localStorage.getItem("access_token");
+
+    const response = await fetch(`${productServiceUrl}`, {
+        headers: {
+            "Authorization": `Bearer ${token}`,
+        }
+    })
+
+    if (response.status === 401) {
+        alert("Session expired or unauthorized. Please log in again.");
+        localStorage.removeItem("access_token");
+        return;
+    }
+
     const products = await response.json();
     productList.innerHTML = ""; // Clear existing products
     products.forEach((product) => {
@@ -100,7 +113,7 @@ fetchProductsBtn.addEventListener("click", async () => {
 
         const response = await fetch(`${productServiceUrl}`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
             body: JSON.stringify({ name, price, stock, vendor_id: vendorId, description }),
         });
         const data = await response.json();
@@ -116,7 +129,7 @@ fetchProductsBtn.addEventListener("click", async () => {
 
         const response = await fetch(`${productServiceUrl}/sales`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({ product_id: productId, quantity }),
         });
         const data = await response.json();
@@ -129,7 +142,7 @@ function checkUserRole() {
     if (userRole === "vendor") {
         createProductContainer.style.display = 'block';
         buyProductContainer.style.display = 'none';
-    } else if (userRole === "buyer") {
+    } else if (userRole === "customer") {
         createProductContainer.style.display = 'none';
         buyProductContainer.style.display = 'block';
     }

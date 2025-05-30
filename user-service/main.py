@@ -7,6 +7,11 @@ from models import User
 import hashlib
 from schemas import UserCreateSchema
 from schemas import UserLoginSchema
+import jwt
+import datetime
+
+SECRET_KEY = "your_secret_key"  # Change this to a strong secret in production
+ALGORITHM = "HS256"
 
 app = FastAPI()
 
@@ -42,6 +47,15 @@ def login_user(user: UserLoginSchema, db: Session = Depends(get_db)):
     hashed_password = hashlib.md5(user.password.encode()).hexdigest()
     db_user = db.query(User).filter(User.email == user.email, User.password == hashed_password).first()
     if db_user:
-        return {"access_token": "dummy_token", "role": db_user.role}  # TODO see JWT? Kong. Role will be in JWT
+        payload = {
+            "sub": db_user.email,
+            "user_id": db_user.id,
+            "name": db_user.name,
+            "role": db_user.role,
+            "iss": "frontend",
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)  # Token expires in 24 hours
+        }
+        token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+        return {"access_token": token, "role": db_user.role}
     else:
         raise HTTPException(status_code=400, detail="Invalid credentials")
