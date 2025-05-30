@@ -17,6 +17,6 @@ services:
       curl -i -X POST http://kong:8001/services/sales-service/routes --data 'strip_path=false' --data 'paths[]=/sales' --data 'methods[]=GET' --data 'methods[]=POST' --data 'methods[]=PUT' --data 'methods[]=DELETE' --data 'methods[]=OPTIONS' --data 'methods[]=PATCH' &&       
       curl -i -X POST http://kong:8001/consumers --data "username=frontend" && \
       curl -i -X POST http://kong:8001/consumers/frontend/jwt --data "algorithm=HS256" --data "key=frontend" --data "secret=your_secret_key" && \
-      curl -i -X POST http://kong:8001/services/product-service/plugins --data "name=jwt" && \
-      curl -i -X POST http://kong:8001/services/sales-service/plugins --data "name=jwt"
+      curl -i -X POST http://kong:8001/services/product-service/plugins --data "name=jwt" --data "config.run_on_preflight=false" && \
+      curl -i -X POST http://kong:8001/services/sales-service/plugins --data "name=jwt" --data "config.run_on_preflight=false"
       "
