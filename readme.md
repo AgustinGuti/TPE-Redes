@@ -15,9 +15,6 @@ docker compose -f docker-compose.yml \
 snap install -y yq
 
 
-
-
-
 ## Setting up docker network
 docker network create \
   --subnet 192.168.0.0/24 \

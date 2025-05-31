@@ -1,0 +1,14 @@
+type: MeshTrace
+name: default
+mesh: default
+meshServices:
+  mode: Exclusive
+spec:
+  default:
+    sampling:
+      overall: 100
+    backends:
+    - type: Zipkin
+      zipkin:
+        url: http://jaeger:9411/api/v2/spans
+        apiVersion: httpJson

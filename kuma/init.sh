@@ -19,15 +19,10 @@ kumactl config control-planes add \
   --skip-verify
 
 echo "Setting up default mesh config..."
-kumactl apply -f - <<EOF
-type: Mesh
-name: default
-meshServices:
-  mode: Exclusive
-EOF
+kumactl apply -f kuma/mesh-config.yaml 
+
 
 echo "Generating tokens..."
-
 
 mkdir -p /tokens
 kumactl generate dataplane-token --tag kuma.io/service=user-service --valid-for 720h  > /tokens/token-user-service
