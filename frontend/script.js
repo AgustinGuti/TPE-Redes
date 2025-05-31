@@ -69,6 +69,23 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
     }
 });
 
+async function handleCreateProduct(e) {
+    e.preventDefault();
+    const token = localStorage.getItem("access_token");
+    const name = document.getElementById("product-name").value;
+    const price = document.getElementById("product-price").value;
+    const stock = document.getElementById("product-stock").value;
+    const description = document.getElementById("product-description").value;
+
+    const response = await fetch(`${productServiceUrl}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name, price, stock, description }),
+    });
+    const data = await response.json();
+    alert("Product Created: " + data.name);
+}
+
 // Fetch and display products
 fetchProductsBtn.addEventListener("click", async () => {
     const token = localStorage.getItem("access_token");
@@ -99,28 +116,6 @@ fetchProductsBtn.addEventListener("click", async () => {
         productList.appendChild(productElement);
     });
 
-    const form = document.getElementById("create-product-form");
-    form.removeEventListener("submit", handleCreateProduct); // Just in case
-    form.addEventListener("submit", handleCreateProduct);
-
-    async function handleCreateProduct(e) {
-        e.preventDefault();
-        const name = document.getElementById("product-name").value;
-        const price = document.getElementById("product-price").value;
-        const stock = document.getElementById("product-stock").value;
-        const vendorId = document.getElementById("product-vendor-id").value;
-        const description = document.getElementById("product-description").value;
-
-        const response = await fetch(`${productServiceUrl}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ name, price, stock, vendor_id: vendorId, description }),
-        });
-        const data = await response.json();
-        alert("Product Created: " + data.name);
-    }
-
-
     // Buy Product (Buyer)
     document.getElementById("buy-product-form").addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -142,6 +137,9 @@ function checkUserRole() {
     if (userRole === "vendor") {
         createProductContainer.style.display = 'block';
         buyProductContainer.style.display = 'none';
+        const form = document.getElementById("create-product-form");
+        form.removeEventListener("submit", handleCreateProduct); // Avoid duplicates
+        form.addEventListener("submit", handleCreateProduct);
     } else if (userRole === "customer") {
         createProductContainer.style.display = 'none';
         buyProductContainer.style.display = 'block';
