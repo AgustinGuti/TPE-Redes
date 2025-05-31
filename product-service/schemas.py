@@ -11,3 +11,13 @@ class ProductRead(ProductCreate):
 
     class Config:
         from_attributes = True
+
+class PurchaseRequest(BaseModel):
+    quantity: int
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "quantity": 1
+            }
+        }

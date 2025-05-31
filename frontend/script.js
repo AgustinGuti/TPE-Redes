@@ -1,5 +1,6 @@
 const userServiceUrl = "http://localhost:8000/users"; // User Service URL
 const productServiceUrl = "http://localhost:8000/products"; // Product Service URL
+const saleServiceUrl = "http://localhost:8000/sales"; // Sale Service URL
 
 // Elements
 const loginBtn = document.getElementById("login-btn");
@@ -83,7 +84,11 @@ async function handleCreateProduct(e) {
         body: JSON.stringify({ name, price, stock, description }),
     });
     const data = await response.json();
-    alert("Product Created: " + data.name);
+    if (response.status == 200){
+        alert("Product Created: " + data.name);
+    } else if (response.status == 400) {
+        alert("Error: " + data.detail);
+    }
 }
 
 // Fetch and display products
@@ -107,30 +112,47 @@ fetchProductsBtn.addEventListener("click", async () => {
     products.forEach((product) => {
         const productElement = document.createElement("div");
         productElement.classList.add("product");
+        productElement.setAttribute("data-product-id", product.id);
+        const productBuyBtn = document.createElement("button");
+        productBuyBtn.addEventListener("click", async (e) => {
+            e.preventDefault();
+            const quantity = prompt("Enter quantity to buy:");
+            if (quantity && !isNaN(quantity) && quantity > 0) {
+                buyProduct(product.id, quantity);
+            } else {
+                alert("Invalid quantity entered.");
+            }
+        });
         productElement.innerHTML = `
             <strong>${product.name}</strong><br>
             Price: $${product.price}<br>
             Description: ${product.description}<br>
             Stock: ${product.stock}
         `;
+        productBuyBtn.textContent = "Buy";
+        productElement.appendChild(productBuyBtn);
         productList.appendChild(productElement);
     });
-
-    // Buy Product (Buyer)
-    document.getElementById("buy-product-form").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const productId = document.getElementById("product-id-to-buy").value;
-        const quantity = document.getElementById("quantity-to-buy").value;
-
-        const response = await fetch(`${productServiceUrl}/sales`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ product_id: productId, quantity }),
-        });
-        const data = await response.json();
-        alert("Purchase Successful: " + data.id);
-    });
 });
+
+function buyProduct(productId, quantity) {
+    const token = localStorage.getItem("access_token");
+    fetch(`${saleServiceUrl}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ product_id: productId, quantity }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            alert("Purchase Successful: " + data.id);
+            fetchProductsBtn.click();
+        } else {
+            alert("Purchase Failed: " + data.detail);
+        }
+    })
+    .catch(error => console.error("Error:", error));
+}
 
 // Check User Role and Show Appropriate Form
 function checkUserRole() {
@@ -143,5 +165,5 @@ function checkUserRole() {
     } else if (userRole === "customer") {
         createProductContainer.style.display = 'none';
         buyProductContainer.style.display = 'block';
-    }
+    }   
 }

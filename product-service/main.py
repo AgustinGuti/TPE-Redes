@@ -6,7 +6,7 @@ from typing import List
 
 from database import get_db, engine, Base
 from models import Product
-from schemas import ProductCreate, ProductRead
+from schemas import ProductCreate, ProductRead, PurchaseRequest
 import jwt
 from fastapi import Header, HTTPException
 
@@ -36,6 +36,23 @@ def get_current_user_payload(authorization: str = Header(...)):
         print(f"Error decoding token: {e}")
         raise HTTPException(status_code=401, detail="Invalid or missing token")
 
+@app.get("/products/{product_id}", response_model=ProductRead)
+def get_product(product_id: int, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
+
+@app.put("/internal/products/{product_id}/purchase", response_model=ProductRead)
+def update_product_stock(product_id: int, purchase: PurchaseRequest, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    product.stock -= purchase.quantity
+    db.commit()
+    db.refresh(product)
+    return product
 
 @app.get("/products", response_model=List[ProductRead])
 def get_products(db: Session = Depends(get_db)):
