@@ -53,7 +53,7 @@ services:
       --dataplane-token-file /tokens/token-product-service
       --dataplane-file /kuma/dataplane.yaml
       --dataplane-var name=product-service
-      --dataplane-var address=192.168.0.5
+      --dataplane-var version=1
       --dataplane-var port=8001
     depends_on:
       - product-service
@@ -76,7 +76,7 @@ services:
       --dataplane-token-file /tokens/token-product-service-db
       --dataplane-file /kuma/dataplane.yaml
       --dataplane-var name=product-service-db
-      --dataplane-var address=192.168.0.15
+      --dataplane-var version=1
       --dataplane-var port=5432
     depends_on:
       - product-service-db

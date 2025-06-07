@@ -8,12 +8,14 @@ services:
         condition: service_healthy
     command: >
       sh -c "
+      curl -i -X POST http://kong:8001/services --data 'name=kuma' --data 'url=http://control-plane:5681' && \
+      curl -i -X POST http://kong:8001/services/kuma/routes --data 'strip_path=false' --data 'paths[]=/mesh-insights' --data 'paths[]=/global-insight' --data 'paths[]=/gui' --data 'paths[]=/meshes' --data 'paths[]=/dataplanes' --data 'paths[]=/status' --data 'paths[]=/policies' --data 'paths[]=/zones' && \
       curl -i -X POST http://kong:8001/services --data 'name=user-service' --data 'url=http://user-service:8001' && \
       curl -i -X POST http://kong:8001/services/user-service/routes --data 'strip_path=false' --data 'paths[]=/users' --data 'methods[]=GET' --data 'methods[]=POST' --data 'methods[]=PUT' --data 'methods[]=DELETE' --data 'methods[]=OPTIONS' --data 'methods[]=PATCH' && \
       curl -i -X POST http://kong:8001/services --data 'name=product-service' --data 'url=http://product-service:8001' && \
       curl -i -X POST http://kong:8001/services/product-service/routes --data 'strip_path=false' --data 'paths[]=/products' --data 'methods[]=GET' --data 'methods[]=POST' --data 'methods[]=PUT' --data 'methods[]=DELETE' --data 'methods[]=OPTIONS' --data 'methods[]=PATCH' && \
       curl -i -X POST http://kong:8001/services --data 'name=sales-service' --data 'url=http://sales-service:8001' && \
-      curl -i -X POST http://kong:8001/services/sales-service/routes --data 'strip_path=false' --data 'paths[]=/sales' --data 'methods[]=GET' --data 'methods[]=POST' --data 'methods[]=PUT' --data 'methods[]=DELETE' --data 'methods[]=OPTIONS' --data 'methods[]=PATCH' &&       
+      curl -i -X POST http://kong:8001/services/sales-service/routes --data 'strip_path=false' --data 'paths[]=/sales' --data 'methods[]=GET' --data 'methods[]=POST' --data 'methods[]=PUT' --data 'methods[]=DELETE' --data 'methods[]=OPTIONS' --data 'methods[]=PATCH' && \
       curl -i -X POST http://kong:8001/consumers --data "username=frontend" && \
       curl -i -X POST http://kong:8001/consumers/frontend/jwt --data "algorithm=HS256" --data "key=frontend" --data "secret=your_secret_key" && \
       curl -i -X POST http://kong:8001/services/product-service/plugins --data "name=jwt" --data "config.run_on_preflight=false" && \

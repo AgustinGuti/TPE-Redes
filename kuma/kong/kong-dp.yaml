@@ -4,7 +4,7 @@ name: {{ name }}
 labels:
   app: {{ name }}
 networking:
-  address: {{ address }}
+  address: 127.0.0.1
   gateway:
     type: DELEGATED
     tags:

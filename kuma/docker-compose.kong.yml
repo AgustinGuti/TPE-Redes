@@ -85,7 +85,6 @@ services:
       --dataplane-token-file /tokens/token-kong
       --dataplane-file /kong/kong-dp.yaml
       --dataplane-var name=kong
-      --dataplane-var address=192.168.0.2
       --dataplane-var port=8000
     depends_on:
       - kong
@@ -108,7 +107,6 @@ services:
       --dataplane-token-file /tokens/token-kong-db
       --dataplane-file /kuma/dataplane.yaml
       --dataplane-var name=kong-db
-      --dataplane-var address=192.168.0.12
       --dataplane-var port=5432
     depends_on:
       - kong-db

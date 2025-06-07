@@ -1,3 +1,12 @@
+type: Mesh
+name: default
+mtls:
+  enabledBackend: builtin
+  backends:
+    - name: builtin
+      type: builtin
+
+---
 type: MeshTrace
 name: default
 mesh: default
