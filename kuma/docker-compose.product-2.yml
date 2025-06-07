@@ -1,0 +1,55 @@
+services:
+  product-service-v2:
+    image: product-service-img-v2
+    build:
+      context: ../product-service-2
+      dockerfile: Dockerfile
+    hostname: product-service-v2
+    networks:
+      - kuma-network
+    environment:
+      - DATABASE_URL=postgresql://myuser:mypassword@product-service-db:5432/myuser
+    volumes:
+      - ./kuma:/kuma
+    depends_on:
+      product-service-db:
+        condition: service_healthy
+
+  product-service-v2-dp:
+    image: kumahq/kuma-dp:2.10.1
+    networks:
+      - kuma-network
+    volumes:
+      - ./kuma:/kuma
+      - ./tokens:/tokens
+      - ./certs:/certs
+    command: >
+      run
+      --cp-address https://control-plane:5678
+      --ca-cert-file /certs/server.crt
+      --dataplane-token-file /tokens/token-product-service-v2
+      --dataplane-file /kuma/dataplane.yaml
+      --dataplane-var name=product-service
+      --dataplane-var version=v2
+      --dataplane-var address=192.168.0.5
+      --dataplane-var port=8001
+    depends_on:
+      - product-service-v2
+      - init
+    cap_add:
+      - NET_ADMIN
+
+  product-service-v2-tp-setup:
+    image: kumahq/kumactl:2.10.1
+    network_mode: "service:product-service-v2"
+    depends_on:
+      - product-service-v2
+    volumes:
+      - ./kuma:/kuma
+    command: >
+      sh -c "
+        kumactl install transparent-proxy \
+        --config-file /kuma/config-transparent-proxy.yaml
+      "
+    cap_add:
+      - NET_ADMIN

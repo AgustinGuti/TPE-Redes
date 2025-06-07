@@ -7,6 +7,7 @@ mtls:
       type: builtin
 
 ---
+
 type: MeshTrace
 name: default
 mesh: default
@@ -21,3 +22,34 @@ spec:
       zipkin:
         url: http://jaeger:9411/api/v2/spans
         apiVersion: httpJson
+
+--- 
+
+type: MeshHTTPRoute
+name: canary-route
+mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: product-service
+  to:
+    - targetRef:
+        kind: MeshService
+        name: product-service
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default:
+            backendRefs:
+              - kind: MeshServiceSubset
+                name: product-service
+                tags:
+                  version: v1
+                weight: 50
+              - kind: MeshServiceSubset
+                name: product-service
+                tags:
+                  version: v2
+                weight: 50

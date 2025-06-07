@@ -4,6 +4,7 @@ docker compose -f docker-compose.yml \
                -f docker-compose.init.yml \
                -f docker-compose.user.yml \
                -f docker-compose.product.yml \
+               -f docker-compose.product-2.yml \
                -f docker-compose.sales.yml \
                -f docker-compose.kong.yml \
                -f docker-compose.kong-config.yml \

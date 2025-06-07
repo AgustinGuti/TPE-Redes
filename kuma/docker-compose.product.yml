@@ -3,8 +3,7 @@ services:
     image: postgres:15
     hostname: product-service-db
     networks:
-      kuma-network:
-        ipv4_address: 192.168.0.15
+      - kuma-network
     environment:
       - POSTGRES_USER=myuser
       - POSTGRES_PASSWORD=mypassword
@@ -28,8 +27,7 @@ services:
       dockerfile: Dockerfile
     hostname: product-service
     networks:
-      kuma-network:
-        ipv4_address: 192.168.0.5
+      - kuma-network
     environment:
       - DATABASE_URL=postgresql://myuser:mypassword@product-service-db:5432/myuser
     volumes:
@@ -53,7 +51,8 @@ services:
       --dataplane-token-file /tokens/token-product-service
       --dataplane-file /kuma/dataplane.yaml
       --dataplane-var name=product-service
-      --dataplane-var version=1
+      --dataplane-var address=192.168.0.6
+      --dataplane-var version=v1
       --dataplane-var port=8001
     depends_on:
       - product-service

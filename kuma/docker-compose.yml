@@ -14,8 +14,7 @@ services:
       - KUMA_GENERAL_TLS_CERT_FILE=/certs/server.crt
       - KUMA_GENERAL_TLS_KEY_FILE=/certs/server.key
     networks:
-      kuma-network:
-        ipv4_address: 192.168.0.1
+      - kuma-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5681/"]
       interval: 10s
@@ -32,8 +31,7 @@ services:
       - "6831:6831/udp" # UDP para traces (Jaeger Thrift)
       - "9411:9411"
     networks:
-      kuma-network:
-        ipv4_address: 192.168.0.50
+      - kuma-network
 
 networks:
   kuma-network:

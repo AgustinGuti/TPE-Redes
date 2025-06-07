@@ -3,8 +3,7 @@ services:
     image: postgres:13
     hostname: kong-db
     networks:
-      kuma-network:
-        ipv4_address: 192.168.0.12
+      - kuma-network
     environment:
       - POSTGRES_USER=kong
       - POSTGRES_PASSWORD=kong
@@ -40,8 +39,7 @@ services:
     image: kong:latest
     hostname: kong
     networks:
-      kuma-network:
-        ipv4_address: 192.168.0.2
+      - kuma-network
     environment:
       - KONG_DATABASE=postgres
       - KONG_PG_HOST=kong-db

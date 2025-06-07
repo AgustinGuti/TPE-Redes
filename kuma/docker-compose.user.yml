@@ -3,8 +3,7 @@ services:
     image: postgres:15
     hostname: user-service-db
     networks:
-      kuma-network:
-        ipv4_address: 192.168.0.13
+      - kuma-network
     environment:
       - POSTGRES_USER=myuser
       - POSTGRES_PASSWORD=mypassword
@@ -28,8 +27,7 @@ services:
       dockerfile: Dockerfile
     hostname: user-service
     networks:
-      kuma-network:
-        ipv4_address: 192.168.0.3
+      - kuma-network
     environment:
       - DATABASE_URL=postgresql://myuser:mypassword@user-service-db:5432/myuser
     volumes:
