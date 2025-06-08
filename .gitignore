@@ -106,10 +106,4 @@ openapi.json
 # VS Code Python extension
 .python-version
 
-
-kuma/kuma-*
-kuma/kuma/*
-kuma/tokens/
-kuma/certs/
-
-!kuma/kuma/*.yaml
+kuma-2.10.1

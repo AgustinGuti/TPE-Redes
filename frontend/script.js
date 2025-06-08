@@ -1,6 +1,6 @@
-const userServiceUrl = "http://10.110.45.26/users"; // User Service URL
-const productServiceUrl = "http://10.110.45.26/products"; // Product Service URL
-const saleServiceUrl = "http://10.110.45.26/sales"; // Sale Service URL
+const userServiceUrl = "http://10.96.227.0/users"; // User Service URL
+const productServiceUrl = "http://10.96.227.0/products"; // Product Service URL
+const saleServiceUrl = "http://10.96.227.0/sales"; // Sale Service URL
 
 // Elements
 const loginBtn = document.getElementById("login-btn");

@@ -1,0 +1,31 @@
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-split
+  namespace: kuma-system
+spec:
+  targetRef:
+      kind: MeshSubset
+      tags:
+        k8s.kuma.io/service-name: kong-kong-admin
+  to:
+    - targetRef:
+        kind: MeshService
+        name: product-service
+      rules:
+        - matches:
+          - path:
+              type: PathPrefix
+              value: "/"
+          default:
+            backendRefs:
+              - kind: MeshService
+                labels:
+                  kuma.io/service: product-service
+                  version: v1
+                weight: 50
+              - kind: MeshService
+                labels:
+                  kuma.io/service: product-service
+                  version: v2
+                weight: 50
