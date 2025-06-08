@@ -1,0 +1,4 @@
+apiVersion: v2
+name: my-service-chart
+version: 0.1.0
+description: Reusable microservice + DB chart

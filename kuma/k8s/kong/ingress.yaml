@@ -1,0 +1,36 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ecommerce-ingress
+  namespace: kuma-system
+  annotations:
+    konghq.com/strip-path: 'false'
+    konghq.com/protocols: http
+    konghq.com/https-redirect-status-code: "301"
+    konghq.com/plugins: app-jwt
+spec:
+  ingressClassName: kong
+  rules:
+  - http:
+      paths:
+      - path: /users
+        pathType: Prefix
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 8001
+      - path: /products
+        pathType: Prefix
+        backend:
+          service:
+            name: product-service
+            port:
+              number: 8001
+      - path: /sales
+        pathType: Prefix
+        backend:
+          service:
+            name: sales-service
+            port:
+              number: 8001

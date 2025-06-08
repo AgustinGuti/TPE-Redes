@@ -1,0 +1,26 @@
+{{- range $key, $svc := .Values.services }}
+{{- if and $svc.enabled $svc.db.enabled }}
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  name: allow-{{ $svc.name }}-to-{{ $svc.db.name }}
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: {{ $svc.mesh | default "default" }}
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags: 
+      k8s.kuma.io/service-name: {{ $svc.db.name }}
+      type: database
+  from:
+    - targetRef:
+        kind: MeshSubset
+        tags: 
+          k8s.kuma.io/service-name: {{ $svc.name }}
+          type: backend
+      default:
+        action: Allow
+---
+{{- end }}
+{{- end }}

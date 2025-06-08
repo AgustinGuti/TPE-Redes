@@ -1,0 +1,45 @@
+services:
+  product:
+    enabled: true
+    name: product-service
+    image: product-service:v1
+    version: v1
+    port: 8001
+    db:
+      enabled: true
+      name: product-service-db
+      image: postgres:15
+      user: myuser
+      password: mypassword
+      dbname: myuser
+      port: 5432
+
+  sales:
+    enabled: true
+    name: sales-service
+    image: sales-service:v1
+    version: v1
+    port: 8001
+    db:
+      enabled: true
+      name: sales-service-db
+      image: postgres:15
+      user: myuser
+      password: mypassword
+      dbname: myuser
+      port: 5432
+
+  user:
+    enabled: true
+    name: user-service
+    image: user-service:v1
+    version: v1
+    port: 8001
+    db:
+      enabled: true
+      name: user-service-db
+      image: postgres:15
+      user: myuser
+      password: mypassword
+      dbname: myuser
+      port: 5432

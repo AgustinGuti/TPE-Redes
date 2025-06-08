@@ -1,6 +1,6 @@
-const userServiceUrl = "http://localhost:8000/users"; // User Service URL
-const productServiceUrl = "http://localhost:8000/products"; // Product Service URL
-const saleServiceUrl = "http://localhost:8000/sales"; // Sale Service URL
+const userServiceUrl = "http://192.168.49.2:32080/users"; // User Service URL
+const productServiceUrl = "http://192.168.49.2:32080/products"; // Product Service URL
+const saleServiceUrl = "http://192.168.49.2:32080/sales"; // Sale Service URL
 
 // Elements
 const loginBtn = document.getElementById("login-btn");

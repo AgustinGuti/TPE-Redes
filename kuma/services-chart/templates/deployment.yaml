@@ -1,0 +1,41 @@
+{{- range $key, $svc := .Values.services }}
+{{- if $svc.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $svc.name }}-{{ $svc.version | default "v1" }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $svc.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $svc.name }}
+        kuma.io/service: {{ $svc.name }}
+        version: {{ $svc.version | default "v1" }}
+        type: backend
+    spec:
+      {{- if $svc.db.enabled }}
+      initContainers:
+        - name: wait-for-db
+          image: busybox
+          command:
+            - sh
+            - -c
+            - until nc -z {{ $svc.db.name }} {{ $svc.db.port }}; do echo waiting for db; sleep 2; done
+      {{- end }}
+      containers:
+        - name: {{ $svc.name }}
+          image: {{ $svc.image }}
+          ports:
+            - containerPort: {{ $svc.port }}
+          env:
+            {{- if $svc.db.enabled }}
+            - name: DATABASE_URL
+              value: "postgresql://{{ $svc.db.user }}:{{ $svc.db.password }}@{{ $svc.db.name }}:{{ $svc.db.port }}/{{ $svc.db.dbname }}"
+            {{- end }}
+---
+{{- end }}
+{{- end }}

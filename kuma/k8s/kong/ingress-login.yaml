@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: login-ingress
+  namespace: kuma-system
+  annotations:
+    konghq.com/strip-path: 'false'
+    konghq.com/protocols: http
+    konghq.com/https-redirect-status-code: "301"
+spec:
+  ingressClassName: kong
+  rules:
+  - http:
+      paths:
+      - path: /users/login
+        pathType: Prefix
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 8001

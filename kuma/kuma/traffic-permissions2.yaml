@@ -1,0 +1,19 @@
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  name: allow-kong-to-all
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      type: backend   
+  from:
+  - targetRef:
+      kind: MeshSubset
+      tags:
+        k8s.kuma.io/service-name: kong-kong-admin
+    default:
+      action: Allow

@@ -1,0 +1,13 @@
+admin:
+  enabled: true
+  type: LoadBalancer  # or LoadBalancer if on cloud
+  http:
+    enabled: true
+    servicePort: 8001
+    containerPort: 8001
+  tls:
+    enabled: false  # or true, if you want HTTPS
+
+# Optional: expose the Admin API externally (be cautious)
+proxy:
+  enabled: true  # usually already true in hybrid setups

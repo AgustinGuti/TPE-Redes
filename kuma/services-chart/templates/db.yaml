@@ -1,0 +1,67 @@
+{{- range $key, $svc := .Values.services }}
+{{- if and $svc.enabled $svc.db.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $svc.db.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $svc.db.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $svc.db.name }}
+        kuma.io/service: {{ $svc.db.name }}
+        type: database
+    spec:
+      containers:
+        - name: postgres
+          image: {{ $svc.db.image }}
+          ports:
+            - containerPort: {{ $svc.db.port }}
+          env:
+            - name: POSTGRES_USER
+              value: {{ $svc.db.user }}
+            - name: POSTGRES_PASSWORD
+              value: {{ $svc.db.password }}
+            - name: POSTGRES_DB
+              value: {{ $svc.db.dbname }}
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "{{ $svc.db.user }}"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data  # Postgres default
+      volumes:
+        - name: pgdata
+          persistentVolumeClaim:
+            claimName: {{ $svc.db.name }}-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $svc.db.name }}
+spec:
+  selector:
+    app: {{ $svc.db.name }}
+  ports:
+    - port: {{ $svc.db.port }}
+      targetPort: {{ $svc.db.port }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $svc.db.name }}-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ $svc.db.storage | default "1Gi" }}
+---
+{{- end }}
+{{- end }}

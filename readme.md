@@ -137,3 +137,63 @@ runuser --user kuma-data-plane-proxy -- \
 kumactl install transparent-proxy \
   --config-file /kuma/config-transparent-proxy.yaml \
   > /kuma/logs/logs-transparent-proxy-install-user-service.log 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+minikube start
+
+
+
+helm repo add kuma https://kumahq.github.io/charts
+helm repo add kong https://charts.konghq.com
+
+helm repo update
+helm install --create-namespace --namespace kuma-system kuma kuma/kuma
+
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml --namespace kuma-system
+kubectl apply -f k8s/gateway.yaml
+
+helm install kong kong/ingress -n kuma-system --create-namespace 
+
+<!-- 
+export PROXY_IP=$(kubectl get svc --namespace kuma-system kong-gateway-proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+echo $PROXY_IP 
+-->
+
+minikube image load product-service:v1
+minikube image load sales-service:v1
+minikube image load user-service:v1
+
+kubectl label namespace kuma-system kuma.io/sidecar-injection=enabled
+
+helm install app-prod ./services-chart/ --namespace kuma-system
+<!--
+helm upgrade app-prod ./services-chart/ --namespace kuma-system
+-->
+
+kubectl apply -f k8s/kong/
+
+<!-- 
+curl -i $PROXY_IP/products 
+kubectl get ing -n kuma-system
+-->
+
+kubectl apply -f kuma/security-mesh.yaml
+
+
+helm upgrade kong kong/kong -n kuma-system -f k8s/kong-values.yaml
+
+
+kubectl port-forward svc/kuma-control-plane -n kuma-system 5681:5681
+
+kubectl port-forward service/kong-gateway-kong-admin -n kuma-system 8080:8444
+

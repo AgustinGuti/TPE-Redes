@@ -1,0 +1,21 @@
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  name: allow-product-service-db
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags: 
+      k8s.kuma.io/service-name: product-service-db
+  from:
+    - targetRef:
+        kind: MeshSubset
+        tags: 
+          k8s.kuma.io/service-name: product-service
+      default:
+        action: Allow
+
+
