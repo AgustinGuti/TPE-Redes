@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: ecommerce
+  labels:
+    app: product-service
+spec:
+  selector:
+    app: product-service
+  ports:
+    - protocol: TCP
+      port: 8001
+      targetPort: 8001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service-v1
+  namespace: ecommerce
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: product-service
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: product-service
+        version: v1
+        kuma.io/service: product-service-v1
+    spec:
+      containers:
+      - name: product-service
+        image: product-service-img:latest
+        imagePullPolicy: Never
+        env:
+        - name: DATABASE_URL
+          value: postgresql://myuser:mypassword@product-db:5432/productdata
+        ports:
+        - containerPort: 8001
+      initContainers:
+      - name: wait-for-db
+        image: postgres:15
+        command: ['sh', '-c', '
+          echo "Waiting for database to be ready...";
+          until pg_isready -h product-db -p 5432; do 
+            echo "Database not ready yet...";
+            sleep 2;
+          done;
+          echo "Database is accepting connections. Waiting 10 seconds...";
+          sleep 10;
+          echo "Checking database user and database...";
+          PGPASSWORD=mypassword psql -h product-db -U myuser -d productdata -c "SELECT 1" || exit 1;
+          echo "Database checks passed. Waiting 5 more seconds...";
+          sleep 5;
+          echo "Init container completed successfully.";
+        ']
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service-v2
+  namespace: ecommerce
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: product-service
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: product-service
+        version: v2
+        kuma.io/service: product-service-v2
+    spec:
+      containers:
+      - name: product-service
+        image: product-service-img-v2:latest
+        imagePullPolicy: Never
+        env:
+        - name: DATABASE_URL
+          value: postgresql://myuser:mypassword@product-db:5432/productdata
+        ports:
+        - containerPort: 8001
+      initContainers:
+      - name: wait-for-db
+        image: postgres:15
+        command: ['sh', '-c', '
+          echo "Waiting for database to be ready...";
+          until pg_isready -h product-db -p 5432; do 
+            echo "Database not ready yet...";
+            sleep 2;
+          done;
+          echo "Database is accepting connections. Waiting 10 seconds...";
+          sleep 10;
+          echo "Checking database user and database...";
+          PGPASSWORD=mypassword psql -h product-db -U myuser -d productdata -c "SELECT 1" || exit 1;
+          echo "Database checks passed. Waiting 5 more seconds...";
+          sleep 5;
+          echo "Init container completed successfully.";
+        '] 

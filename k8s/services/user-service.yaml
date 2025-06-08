@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: ecommerce
+  labels:
+    app: user-service
+spec:
+  selector:
+    app: user-service
+  ports:
+    - protocol: TCP
+      port: 8001
+      targetPort: 8001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: ecommerce
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+        kuma.io/service: user-service
+    spec:
+      containers:
+      - name: user-service
+        image: user-service-img:latest
+        imagePullPolicy: Never
+        env:
+        - name: DATABASE_URL
+          value: postgresql://myuser:mypassword@user-db:5432/userdata
+        ports:
+        - containerPort: 8001
+      initContainers:
+      - name: wait-for-db
+        image: postgres:15
+        command: ['sh', '-c', 'until pg_isready -h user-db -p 5432; do echo waiting for user-db; sleep 2; done; echo "Database is ready. Waiting for 5 seconds..."; sleep 5;'] 

@@ -1,0 +1,21 @@
+apiVersion: kuma.io/v1alpha1
+kind: TrafficRoute
+mesh: default
+metadata:
+  name: product-canary
+  namespace: ecommerce
+spec:
+  sources:
+    - match:
+        kuma.io/service: frontend
+  destinations:
+    - match:
+        kuma.io/service: product-service
+  conf:
+    split:
+      - weight: 50
+        destination:
+          kuma.io/service: product-service-v1
+      - weight: 50
+        destination:
+          kuma.io/service: product-service-v2 

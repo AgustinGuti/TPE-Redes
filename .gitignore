@@ -113,3 +113,6 @@ kuma/tokens/
 kuma/certs/
 
 !kuma/kuma/*.yaml
+
+kuma-2.10.1/
+minikube-linux-amd64
