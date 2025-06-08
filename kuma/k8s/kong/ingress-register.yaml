@@ -1,9 +1,10 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: login-ingress
+  name: users-register-only
   namespace: kuma-system
   annotations:
+    konghq.com/methods: POST
     konghq.com/strip-path: 'false'
     konghq.com/protocols: http
     konghq.com/https-redirect-status-code: "301"
@@ -12,7 +13,7 @@ spec:
   rules:
   - http:
       paths:
-      - path: /users/login
+      - path: /users
         pathType: Prefix
         backend:
           service:

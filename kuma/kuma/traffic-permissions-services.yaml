@@ -1,14 +1,21 @@
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrafficPermission
 metadata:
-  name: allow-all
+  name: allow-inter-backend-traffic
   namespace: kuma-system
   labels:
     kuma.io/mesh: default
 spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      type: backend   
   from:
   - targetRef:
-      kind: Mesh
+      kind: MeshSubset
+      tags:
+        type: backend
     default:
       action: Allow
+
 
