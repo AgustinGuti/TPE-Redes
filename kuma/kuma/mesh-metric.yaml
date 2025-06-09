@@ -1,0 +1,25 @@
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetric
+metadata:
+  name: metrics-default
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  default:
+    sidecar:
+      includeUnused: true
+      profiles:
+        appendProfiles:
+        - name: Basic
+        exclude:
+        - type: Regex
+          match: envoy_cluster_external_upstream_rq_.*
+        include:
+        - type: Exact
+          match: envoy_cluster_default_total_match_count
+    backends:
+    - type: Prometheus
+      prometheus:
+        port: 5670
+        path: "/metrics"

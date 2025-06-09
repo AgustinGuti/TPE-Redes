@@ -1,0 +1,14 @@
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrace
+metadata:
+  name: zipkin
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  default:
+    backends:
+    - type: Zipkin
+      zipkin:
+        url: http://jaeger-collector.mesh-observability.svc.cluster.local:9411/api/v2/spans
+        apiVersion: httpJson

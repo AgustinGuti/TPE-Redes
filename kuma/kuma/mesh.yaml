@@ -15,3 +15,11 @@ spec:
           caCert:
             RSAbits: 2048
             expiration: 10y
+  tracing:
+    defaultBackend: zipkin
+    backends:
+      - name: zipkin
+        type: zipkin
+        sampling: 100.0
+        conf:
+          url: http://jaeger-collector.mesh-observability.svc.cluster.local:9411/api/v2/spans

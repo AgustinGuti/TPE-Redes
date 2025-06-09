@@ -10,6 +10,7 @@ spec:
   ports:
     - port: {{ $svc.port }}
       targetPort: {{ $svc.port }}
+      appProtocol: http
 ---
 {{- end }}
 {{- end }}
