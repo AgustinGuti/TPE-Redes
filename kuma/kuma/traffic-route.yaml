@@ -2,7 +2,7 @@ apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
 metadata:
   name: http-split
-  namespace: kuma-system
+  namespace: ecommerce
 spec:
   targetRef:
       kind: MeshSubset

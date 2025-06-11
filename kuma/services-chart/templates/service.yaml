@@ -1,5 +1,9 @@
+{{- $renderedServices := dict }} {{/* Track rendered services by name */}}
 {{- range $key, $svc := .Values.services }}
 {{- if $svc.enabled }}
+{{- if not (hasKey $renderedServices $svc.name) }} {{/* Only render once per unique name */}}
+{{- $_ := set $renderedServices $svc.name true }} {{/* Mark as rendered */}}
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -12,5 +16,6 @@ spec:
       targetPort: {{ $svc.port }}
       appProtocol: http
 ---
+{{- end }}
 {{- end }}
 {{- end }}

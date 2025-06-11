@@ -2,7 +2,7 @@ apiVersion: kuma.io/v1alpha1
 kind: MeshMetric
 metadata:
   name: metrics-default
-  namespace: kuma-system
+  namespace: ecommerce
   labels:
     kuma.io/mesh: default
 spec:

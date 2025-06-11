@@ -2,7 +2,7 @@ apiVersion: kuma.io/v1alpha1
 kind: MeshTrafficPermission
 metadata:
   name: allow-inter-backend-traffic
-  namespace: kuma-system
+  namespace: ecommerce
   labels:
     kuma.io/mesh: default
 spec:

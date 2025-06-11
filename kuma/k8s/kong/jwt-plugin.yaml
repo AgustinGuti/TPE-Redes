@@ -2,7 +2,7 @@ apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
 metadata:
   name: app-jwt
-  namespace: kuma-system
+  namespace: ecommerce
 plugin: jwt
 config: 
   claims_to_verify:

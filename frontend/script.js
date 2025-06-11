@@ -1,6 +1,9 @@
-const userServiceUrl = "http://10.96.227.0/users"; // User Service URL
-const productServiceUrl = "http://10.96.227.0/products"; // Product Service URL
-const saleServiceUrl = "http://10.96.227.0/sales"; // Sale Service URL
+const minikubeIP = "192.168.49.2"
+const baseUrl = `http://${minikubeIP}:30080`;
+
+const userServiceUrl = `${baseUrl}/users`;
+const productServiceUrl = `${baseUrl}/products`;
+const saleServiceUrl = `${baseUrl}/sales`;
 
 // Elements
 const loginBtn = document.getElementById("login-btn");

@@ -1,21 +1,20 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: login-ingress
-  namespace: ecommerce
+  name: kuma-gui-ingress
+  namespace: kuma-system
   annotations:
-    konghq.com/strip-path: 'false'
+    konghq.com/strip-path: "false"
     konghq.com/protocols: http
-    konghq.com/https-redirect-status-code: "301"
 spec:
   ingressClassName: kong
   rules:
   - http:
       paths:
-      - path: /users/login
+      - path: /gui
         pathType: Prefix
         backend:
           service:
-            name: user-service
+            name: kuma-control-plane
             port:
-              number: 8001
+              number: 5681

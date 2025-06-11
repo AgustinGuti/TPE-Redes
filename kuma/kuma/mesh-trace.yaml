@@ -2,7 +2,7 @@ apiVersion: kuma.io/v1alpha1
 kind: MeshTrace
 metadata:
   name: zipkin
-  namespace: kuma-system
+  namespace: ecommerce
   labels:
     kuma.io/mesh: default
 spec:

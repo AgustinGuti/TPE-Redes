@@ -1,0 +1,409 @@
+apiVersion: v1
+items:
+- apiVersion: kuma.io/v1alpha1
+  kind: Dataplane
+  mesh: default
+  metadata:
+    annotations:
+      kuma.io/display-name: kong-kong-78674b567b-g4hj6
+    creationTimestamp: "2025-06-08T21:19:23Z"
+    generation: 1
+    labels:
+      app: kong-kong
+      app.kubernetes.io/component: app
+      app.kubernetes.io/instance: kong
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/name: kong
+      app.kubernetes.io/version: "3.9"
+      helm.sh/chart: kong-2.49.0
+      k8s.kuma.io/namespace: kuma-system
+      kuma.io/env: kubernetes
+      kuma.io/mesh: default
+      kuma.io/origin: zone
+      kuma.io/proxy-type: sidecar
+      kuma.io/zone: default
+      pod-template-hash: 78674b567b
+      version: "3.9"
+    name: kong-kong-78674b567b-g4hj6
+    namespace: kuma-system
+    ownerReferences:
+    - apiVersion: v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Pod
+      name: kong-kong-78674b567b-g4hj6
+      uid: 9425e835-3760-499f-9e5d-dcb915e0d10d
+    resourceVersion: "6515"
+    uid: 9b2b95ec-560b-4ce6-9494-7188dc339bd5
+  spec:
+    networking:
+      address: 10.244.0.14
+      admin:
+        port: 9901
+      gateway:
+        tags:
+          app: kong-kong
+          app.kubernetes.io/component: app
+          app.kubernetes.io/instance: kong
+          app.kubernetes.io/managed-by: Helm
+          app.kubernetes.io/name: kong
+          app.kubernetes.io/version: "3.9"
+          helm.sh/chart: kong-2.49.0
+          k8s.kuma.io/namespace: kuma-system
+          k8s.kuma.io/service-name: kong-kong-admin
+          k8s.kuma.io/service-port: "8001"
+          kubernetes.io/hostname: minikube
+          kuma.io/protocol: tcp
+          kuma.io/service: kong-kong-admin_kuma-system_svc_8001
+          kuma.io/zone: default
+          pod-template-hash: 78674b567b
+          version: "3.9"
+      transparentProxying:
+        ipFamilyMode: DualStack
+        redirectPortInbound: 15006
+        redirectPortOutbound: 15001
+- apiVersion: kuma.io/v1alpha1
+  kind: Dataplane
+  mesh: default
+  metadata:
+    annotations:
+      kuma.io/display-name: product-service-db-6666cfc6f6-vgv27
+    creationTimestamp: "2025-06-08T20:35:46Z"
+    generation: 2
+    labels:
+      app: product-service-db
+      k8s.kuma.io/namespace: kuma-system
+      kuma.io/env: kubernetes
+      kuma.io/mesh: default
+      kuma.io/origin: zone
+      kuma.io/proxy-type: sidecar
+      kuma.io/service: product-service-db
+      kuma.io/zone: default
+      pod-template-hash: 6666cfc6f6
+      type: database
+    name: product-service-db-6666cfc6f6-vgv27
+    namespace: kuma-system
+    ownerReferences:
+    - apiVersion: v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Pod
+      name: product-service-db-6666cfc6f6-vgv27
+      uid: 4b97ed93-f86f-45c9-9c1a-83f1527c37cb
+    resourceVersion: "1458"
+    uid: 6de29325-022d-40a0-84b5-c48a3729905c
+  spec:
+    networking:
+      address: 10.244.0.8
+      admin:
+        port: 9901
+      inbound:
+      - health:
+          ready: true
+        port: 5432
+        tags:
+          app: product-service-db
+          k8s.kuma.io/namespace: kuma-system
+          k8s.kuma.io/service-name: product-service-db
+          k8s.kuma.io/service-port: "5432"
+          kubernetes.io/hostname: minikube
+          kuma.io/protocol: tcp
+          kuma.io/service: product-service-db_kuma-system_svc_5432
+          kuma.io/zone: default
+          pod-template-hash: 6666cfc6f6
+          type: database
+      transparentProxying:
+        ipFamilyMode: DualStack
+        redirectPortInbound: 15006
+        redirectPortOutbound: 15001
+    probes:
+      port: 9000
+- apiVersion: kuma.io/v1alpha1
+  kind: Dataplane
+  mesh: default
+  metadata:
+    annotations:
+      kuma.io/display-name: product-service-v1-58466866-gkzmz
+    creationTimestamp: "2025-06-08T20:35:48Z"
+    generation: 2
+    labels:
+      app: product-service
+      k8s.kuma.io/namespace: kuma-system
+      kuma.io/env: kubernetes
+      kuma.io/mesh: default
+      kuma.io/origin: zone
+      kuma.io/proxy-type: sidecar
+      kuma.io/service: product-service
+      kuma.io/zone: default
+      pod-template-hash: "58466866"
+      type: backend
+      version: v1
+    name: product-service-v1-58466866-gkzmz
+    namespace: kuma-system
+    ownerReferences:
+    - apiVersion: v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Pod
+      name: product-service-v1-58466866-gkzmz
+      uid: 2e30b067-e9f9-4433-8389-e14ed0e27551
+    resourceVersion: "1557"
+    uid: 99829173-693d-42a2-aec6-8e581e5bbf18
+  spec:
+    networking:
+      address: 10.244.0.9
+      admin:
+        port: 9901
+      inbound:
+      - health:
+          ready: true
+        port: 8001
+        tags:
+          app: product-service
+          k8s.kuma.io/namespace: kuma-system
+          k8s.kuma.io/service-name: product-service
+          k8s.kuma.io/service-port: "8001"
+          kubernetes.io/hostname: minikube
+          kuma.io/protocol: tcp
+          kuma.io/service: product-service_kuma-system_svc_8001
+          kuma.io/zone: default
+          pod-template-hash: "58466866"
+          type: backend
+          version: v1
+      transparentProxying:
+        ipFamilyMode: DualStack
+        redirectPortInbound: 15006
+        redirectPortOutbound: 15001
+    probes:
+      port: 9000
+- apiVersion: kuma.io/v1alpha1
+  kind: Dataplane
+  mesh: default
+  metadata:
+    annotations:
+      kuma.io/display-name: sales-service-db-65f5fcf547-njw25
+    creationTimestamp: "2025-06-08T20:35:49Z"
+    generation: 2
+    labels:
+      app: sales-service-db
+      k8s.kuma.io/namespace: kuma-system
+      kuma.io/env: kubernetes
+      kuma.io/mesh: default
+      kuma.io/origin: zone
+      kuma.io/proxy-type: sidecar
+      kuma.io/service: sales-service-db
+      kuma.io/zone: default
+      pod-template-hash: 65f5fcf547
+      type: database
+    name: sales-service-db-65f5fcf547-njw25
+    namespace: kuma-system
+    ownerReferences:
+    - apiVersion: v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Pod
+      name: sales-service-db-65f5fcf547-njw25
+      uid: 38d4b133-117d-4d3a-9a9a-9eefb6bf250f
+    resourceVersion: "1478"
+    uid: b33d8c28-b0a3-4e6d-b81f-3cef429d2e06
+  spec:
+    networking:
+      address: 10.244.0.10
+      admin:
+        port: 9901
+      inbound:
+      - health:
+          ready: true
+        port: 5432
+        tags:
+          app: sales-service-db
+          k8s.kuma.io/namespace: kuma-system
+          k8s.kuma.io/service-name: sales-service-db
+          k8s.kuma.io/service-port: "5432"
+          kubernetes.io/hostname: minikube
+          kuma.io/protocol: tcp
+          kuma.io/service: sales-service-db_kuma-system_svc_5432
+          kuma.io/zone: default
+          pod-template-hash: 65f5fcf547
+          type: database
+      transparentProxying:
+        ipFamilyMode: DualStack
+        redirectPortInbound: 15006
+        redirectPortOutbound: 15001
+    probes:
+      port: 9000
+- apiVersion: kuma.io/v1alpha1
+  kind: Dataplane
+  mesh: default
+  metadata:
+    annotations:
+      kuma.io/display-name: sales-service-v1-6cc7558c88-wzrnh
+    creationTimestamp: "2025-06-08T20:35:51Z"
+    generation: 2
+    labels:
+      app: sales-service
+      k8s.kuma.io/namespace: kuma-system
+      kuma.io/env: kubernetes
+      kuma.io/mesh: default
+      kuma.io/origin: zone
+      kuma.io/proxy-type: sidecar
+      kuma.io/service: sales-service
+      kuma.io/zone: default
+      pod-template-hash: 6cc7558c88
+      type: backend
+      version: v1
+    name: sales-service-v1-6cc7558c88-wzrnh
+    namespace: kuma-system
+    ownerReferences:
+    - apiVersion: v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Pod
+      name: sales-service-v1-6cc7558c88-wzrnh
+      uid: dd0ba746-1c58-40d8-a5f1-88cddad3b7e7
+    resourceVersion: "1586"
+    uid: 85ba4590-0d7d-476a-a519-799ff3b0d9bf
+  spec:
+    networking:
+      address: 10.244.0.12
+      admin:
+        port: 9901
+      inbound:
+      - health:
+          ready: true
+        port: 8001
+        tags:
+          app: sales-service
+          k8s.kuma.io/namespace: kuma-system
+          k8s.kuma.io/service-name: sales-service
+          k8s.kuma.io/service-port: "8001"
+          kubernetes.io/hostname: minikube
+          kuma.io/protocol: tcp
+          kuma.io/service: sales-service_kuma-system_svc_8001
+          kuma.io/zone: default
+          pod-template-hash: 6cc7558c88
+          type: backend
+          version: v1
+      transparentProxying:
+        ipFamilyMode: DualStack
+        redirectPortInbound: 15006
+        redirectPortOutbound: 15001
+    probes:
+      port: 9000
+- apiVersion: kuma.io/v1alpha1
+  kind: Dataplane
+  mesh: default
+  metadata:
+    annotations:
+      kuma.io/display-name: user-service-db-687746f86b-w5d7w
+    creationTimestamp: "2025-06-08T20:35:53Z"
+    generation: 2
+    labels:
+      app: user-service-db
+      k8s.kuma.io/namespace: kuma-system
+      kuma.io/env: kubernetes
+      kuma.io/mesh: default
+      kuma.io/origin: zone
+      kuma.io/proxy-type: sidecar
+      kuma.io/service: user-service-db
+      kuma.io/zone: default
+      pod-template-hash: 687746f86b
+      type: database
+    name: user-service-db-687746f86b-w5d7w
+    namespace: kuma-system
+    ownerReferences:
+    - apiVersion: v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Pod
+      name: user-service-db-687746f86b-w5d7w
+      uid: e6862bfa-6f1b-4ef9-bd81-9cbd3990e89b
+    resourceVersion: "1472"
+    uid: 8321587b-fac2-4f10-9d7c-2bd0e6f522f5
+  spec:
+    networking:
+      address: 10.244.0.11
+      admin:
+        port: 9901
+      inbound:
+      - health:
+          ready: true
+        port: 5432
+        tags:
+          app: user-service-db
+          k8s.kuma.io/namespace: kuma-system
+          k8s.kuma.io/service-name: user-service-db
+          k8s.kuma.io/service-port: "5432"
+          kubernetes.io/hostname: minikube
+          kuma.io/protocol: tcp
+          kuma.io/service: user-service-db_kuma-system_svc_5432
+          kuma.io/zone: default
+          pod-template-hash: 687746f86b
+          type: database
+      transparentProxying:
+        ipFamilyMode: DualStack
+        redirectPortInbound: 15006
+        redirectPortOutbound: 15001
+    probes:
+      port: 9000
+- apiVersion: kuma.io/v1alpha1
+  kind: Dataplane
+  mesh: default
+  metadata:
+    annotations:
+      kuma.io/display-name: user-service-v1-64d6499898-tmgdt
+    creationTimestamp: "2025-06-08T20:35:55Z"
+    generation: 2
+    labels:
+      app: user-service
+      k8s.kuma.io/namespace: kuma-system
+      kuma.io/env: kubernetes
+      kuma.io/mesh: default
+      kuma.io/origin: zone
+      kuma.io/proxy-type: sidecar
+      kuma.io/service: user-service
+      kuma.io/zone: default
+      pod-template-hash: 64d6499898
+      type: backend
+      version: v1
+    name: user-service-v1-64d6499898-tmgdt
+    namespace: kuma-system
+    ownerReferences:
+    - apiVersion: v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Pod
+      name: user-service-v1-64d6499898-tmgdt
+      uid: b659f83e-0d9d-4d87-bd26-0da484935e39
+    resourceVersion: "1570"
+    uid: 907b4898-62f0-4f60-bb46-566d33ca9c82
+  spec:
+    networking:
+      address: 10.244.0.13
+      admin:
+        port: 9901
+      inbound:
+      - health:
+          ready: true
+        port: 8001
+        tags:
+          app: user-service
+          k8s.kuma.io/namespace: kuma-system
+          k8s.kuma.io/service-name: user-service
+          k8s.kuma.io/service-port: "8001"
+          kubernetes.io/hostname: minikube
+          kuma.io/protocol: tcp
+          kuma.io/service: user-service_kuma-system_svc_8001
+          kuma.io/zone: default
+          pod-template-hash: 64d6499898
+          type: backend
+          version: v1
+      transparentProxying:
+        ipFamilyMode: DualStack
+        redirectPortInbound: 15006
+        redirectPortOutbound: 15001
+    probes:
+      port: 9000
+kind: List
+metadata:
+  resourceVersion: ""

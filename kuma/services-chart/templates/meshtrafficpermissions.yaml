@@ -1,10 +1,16 @@
+{{- $renderedPermissions := dict }}  {{/* track rendered permissions by key */}}
+
 {{- range $key, $svc := .Values.services }}
-{{- if and $svc.enabled $svc.db.enabled }}
+  {{- if and $svc.enabled $svc.db.enabled }}
+    {{- $permKey := printf "allow-%s-to-%s" $svc.name $svc.db.name }}
+    {{- if not (hasKey $renderedPermissions $permKey) }}
+      {{- $_ := set $renderedPermissions $permKey true }}
+
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrafficPermission
 metadata:
   name: allow-{{ $svc.name }}-to-{{ $svc.db.name }}
-  namespace: kuma-system
+  namespace: ecommerce
   labels:
     kuma.io/mesh: {{ $svc.mesh | default "default" }}
 spec:
@@ -22,5 +28,6 @@ spec:
       default:
         action: Allow
 ---
-{{- end }}
+    {{- end }}
+  {{- end }}
 {{- end }}

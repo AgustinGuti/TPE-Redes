@@ -1,8 +1,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ecommerce-ingress
-  namespace: kuma-system
+  name: kuma-system-ingress
+  namespace: ecommerce
   annotations:
     konghq.com/strip-path: 'false'
     konghq.com/protocols: http

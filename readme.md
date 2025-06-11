@@ -1,59 +1,124 @@
+# Microservicios de E-Commerce con Kuma Service Mesh
 
-minikube start
+Este proyecto demuestra una arquitectura de microservicios para una plataforma de comercio electrónico utilizando:
+- Kuma service mesh para descubrimiento de servicios y gestión de tráfico
+- Kong API Gateway para gestión de API y autenticación
+- Kubernetes (a través de Minikube) para orquestación de contenedores
 
-helm repo add kuma https://kumahq.github.io/charts
-helm repo add kong https://charts.konghq.com
+El sistema consta de tres servicios principales: Usuario, Producto y Ventas, cada uno con su propia base de datos.
 
-helm repo update
-helm install --create-namespace --namespace kuma-system kuma kuma/kuma
+## Visión general de la arquitectura
 
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml --namespace kuma-system
+| Servicio | Propósito | Endpoints |
+|----------|-----------|-----------|
+| Servicio de Usuario | Autenticación y gestión de usuarios | `/users`, `/users/login` |
+| Servicio de Producto | Catálogo de productos e inventario | `/products` |
+| Servicio de Ventas | Procesamiento de pedidos | `/sales` |
 
-helm install kong kong/ingress -n kuma-system --create-namespace 
+# Inicializar Minikube con Docker y Kuma
 
-<!-- 
-export PROXY_IP=$(kubectl get svc --namespace kuma-system kong-gateway-proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-echo $PROXY_IP 
--->
+## Instrucciones de configuración
 
+### 1. Prerequisitos
+- [Minikube](https://minikube.sigs.k8s.io/docs/start/) v1.28+
+- [Docker](https://docs.docker.com/get-docker/) v28+
+- [Helm](https://helm.sh/docs/intro/install/) v3.8+
+- [kubectl](https://kubernetes.io/docs/tasks/tools/) v1.25+
+
+### 2. Construcción y configuración del entorno
+### Ubicarse en el directorio de ejecución
+```bash
+cd kuma/kuma
+```
+
+### Creación de imagenes de Docker
+```bash
 docker build -t product-service:v1 ../product-service
 docker build -t product-service:v2 ../product-service-2
 docker build -t sales-service:v1 ../sales-service
 docker build -t user-service:v1 ../user-service
+```
 
+### Creación de la red Docker
+```bash
+docker network create --driver=bridge --subnet=10.0.0.0/24  minikube-net
+```
+
+### Iniciar Minikube con la red Docker y configuración de pod CIDR
+```bash
+MINIKUBE_DOCKER_NETWORK=minikube-net minikube start --driver=docker --extra-config=kubelet.pod-cidr=192.168.0.0/24
+```
+
+### Cargar las imágenes de Docker en Minikube
+```bash
 minikube image load product-service:v1
 minikube image load product-service:v2
 minikube image load sales-service:v1
 minikube image load user-service:v1
+```
 
-kubectl label namespace kuma-system kuma.io/sidecar-injection=enabled
+### Instalar Helm y configurar repositorios
+```bash
+helm repo add kuma https://kumahq.github.io/charts
+helm repo add kong https://charts.konghq.com
 
-helm install app-prod ./services-chart/ --namespace kuma-system
+helm repo update
+```
 
-<!--
-helm upgrade app-prod ./services-chart/ --namespace kuma-system
--->
+## Kuma
 
+### Instalar Kuma
+```bash
+helm install --create-namespace --namespace kuma-system kuma kuma/kuma
+### Esperar a que Kuma esté completamente desplegado
+# kubectl wait --namespace kuma-system --for=condition=available deployment/kuma-control-plane --timeout=600s
+```
+
+### Habilitar inyección de sidecar en el namespace `ecommerce`
+```bash
+kubectl create namespace ecommerce
+kubectl label namespace ecommerce kuma.io/sidecar-injection=enabled
+```
+
+
+
+### Configurar mTLS y permisos de tráfico en Kuma
+```bash
+kubectl apply -f kuma/
+```
+
+### Deployar los servicios
+```bash
+helm install app-prod ./services-chart/ --namespace ecommerce
+```
+
+## Kong Gateway
+
+### Instalar Kong Gateway y Gateway API
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml --namespace ecommerce
+
+helm install kong kong/ingress -n ecommerce --create-namespace
+```
+
+### Configurar el proxy de Kong
+```bash
 kubectl apply -f k8s/secret.yaml
 kubectl apply -f k8s/kong/
 
-<!-- 
-curl -i $PROXY_IP/products 
-kubectl get ing -n kuma-system
--->
+helm upgrade kong kong/kong -n ecommerce -f k8s/kong-values.yaml
+```
 
-kubectl apply -f kuma/mesh.yaml
-kubectl apply -f kuma/traffic-permissions-gateway.yaml
-kubectl apply -f kuma/traffic-permissions-services.yaml
+## Instalar observabilidad
+```bash
+kumactl install observability | kubectl apply -f -
+```
 
-kubectl apply -f kuma/traffic-permissions-all.yaml
+### Open minikube tunnel
+```bash
+minikube tunnel
+```
 
+kubectl port-forward svc/grafana 3000:80 -n mesh-observability
 
-
-helm upgrade kong kong/kong -n kuma-system -f k8s/kong-values.yaml
-
-
-kubectl port-forward svc/kuma-control-plane -n kuma-system 5681:5681
-
-kubectl port-forward service/kong-gateway-kong-admin -n kuma-system 8080:8444
-
+kubectl port-forward svc/jaeger-query 16686:80 -n mesh-observability
