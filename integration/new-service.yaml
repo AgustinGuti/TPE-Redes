@@ -1,0 +1,15 @@
+services:
+  new-service:
+    enabled: true
+    name: new-service
+    image: user/new-service:v2
+    version: v2
+    port: 8001
+    db:
+      enabled: true
+      name: new-service-db
+      image: postgres:15
+      user: myuser
+      password: mypassword
+      dbname: myuser
+      port: 5432

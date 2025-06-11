@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
+from time import sleep
 
 from typing import List
 
@@ -39,6 +40,7 @@ def get_current_user_payload(authorization: str = Header(...)):
 @app.get("/products/{product_id}", response_model=ProductRead)
 def get_product(product_id: int, db: Session = Depends(get_db)):
     product = db.query(Product).filter(Product.id == product_id).first()
+    sleep(1)  # Simulate a delay for testing purposes
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     return product

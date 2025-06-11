@@ -1,0 +1,76 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      run: docker build -t user/new-service:${{ github.sha }} .
+
+    - name: Log in to DockerHub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    - name: Push image
+      run: docker push user/new-service:${{ github.sha }}
+
+    - name: Install kubectl
+      run: |
+        curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+
+    - name: Set up kubeconfig
+      run: |
+        echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig.yaml
+        export KUBECONFIG=kubeconfig.yaml
+
+    - name: Install Helm
+      run: |
+        curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+    - name: Deploy new version with Helm (v2)
+      run: |
+        helm upgrade --install new-service ./services-chart \
+          --namespace ecommerce \
+          --create-namespace \
+          -f new-service.yaml
+
+    - name: 10% green / 90% blue
+      run: |
+        kubectl patch meshhttproute http-split-new-service -n ecommerce --type=merge -p '{"spec":{"to":[{"rules":[{"default":{"backendRefs":[{"labels":{"version":"v1"},"weight":90},{"labels":{"version":"v2"},"weight":10}]}}]}]}}'
+      timeout-minutes: 5
+
+      # Add health check for the service
+    - name: Wait 5 minutes for validation
+      run: sleep 300
+
+    - name: 30% green / 70% blue
+      run: |
+        kubectl patch meshhttproute http-split-new-service -n ecommerce --type=merge -p '{"spec":{"to":[{"rules":[{"default":{"backendRefs":[{"labels":{"version":"v1"},"weight":70},{"labels":{"version":"v2"},"weight":30}]}}]}]}}'
+      timeout-minutes: 5
+
+    - name: Wait 5 minutes for validation
+      run: sleep 300
+
+    - name: 50% green / 50% blue
+      run: |
+        kubectl patch meshhttproute http-split-new-service -n ecommerce --type=merge -p '{"spec":{"to":[{"rules":[{"default":{"backendRefs":[{"labels":{"version":"v1"},"weight":50},{"labels":{"version":"v2"},"weight":50}]}}]}]}}'
+      timeout-minutes: 5
+
+    - name: Wait 5 minutes for validation
+      run: sleep 300
+
+    - name: 100% green / 0% blue
+      run: |
+        kubectl patch meshhttproute http-split-new-service -n ecommerce --type=merge -p '{"spec":{"to":[{"rules":[{"default":{"backendRefs":[{"labels":{"version":"v1"},"weight":0},{"labels":{"version":"v2"},"weight":100}]}}]}]}}'

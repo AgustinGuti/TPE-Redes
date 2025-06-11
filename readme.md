@@ -70,8 +70,7 @@ helm repo update
 ### Instalar Kuma
 ```bash
 helm install --create-namespace --namespace kuma-system kuma kuma/kuma
-### Esperar a que Kuma esté completamente desplegado
-# kubectl wait --namespace kuma-system --for=condition=available deployment/kuma-control-plane --timeout=600s
+kubectl wait --namespace kuma-system --for=condition=available deployment/kuma-control-plane --timeout=600s
 ```
 
 ### Habilitar inyección de sidecar en el namespace `ecommerce`
@@ -79,7 +78,6 @@ helm install --create-namespace --namespace kuma-system kuma kuma/kuma
 kubectl create namespace ecommerce
 kubectl label namespace ecommerce kuma.io/sidecar-injection=enabled
 ```
-
 
 
 ### Configurar mTLS y permisos de tráfico en Kuma
@@ -114,11 +112,18 @@ helm upgrade kong kong/kong -n ecommerce -f k8s/kong-values.yaml
 kumactl install observability | kubectl apply -f -
 ```
 
-### Open minikube tunnel
+### Abrir túnel de Minikube para acceso a servicios
 ```bash
 minikube tunnel
 ```
 
-kubectl port-forward svc/grafana 3000:80 -n mesh-observability
+## Esperar a que todos los pods estén listos
+```bash
+kubectl wait --for=condition=ready --timeout=600s --namespace=ecommerce pods --all
+```
 
+### Abrir puertos para acceder a la observabilidad
+```bash
+kubectl port-forward svc/grafana 3000:80 -n mesh-observability
 kubectl port-forward svc/jaeger-query 16686:80 -n mesh-observability
+```
