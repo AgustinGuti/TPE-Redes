@@ -23,12 +23,13 @@ El sistema consta de tres servicios principales: Usuario, Producto y Ventas, cad
 - [Minikube](https://minikube.sigs.k8s.io/docs/start/) v1.28+
 - [Docker](https://docs.docker.com/get-docker/) v28+
 - [Helm](https://helm.sh/docs/intro/install/) v3.8+
+- [Kuma](https://kuma.io/docs/2.10.x/introduction/install/) v1.10+
 - [kubectl](https://kubernetes.io/docs/tasks/tools/) v1.25+
 
 ### 2. Construcción y configuración del entorno
 ### Ubicarse en el directorio de ejecución
 ```bash
-cd kuma/kuma
+cd kuma
 ```
 
 ### Creación de imagenes de Docker
@@ -112,7 +113,7 @@ helm upgrade kong kong/kong -n ecommerce -f k8s/kong-values.yaml
 kumactl install observability | kubectl apply -f -
 ```
 
-### Abrir túnel de Minikube para acceso a servicios
+### Abrir túnel de Minikube para acceso a servicios (En otra terminal)
 ```bash
 minikube tunnel
 ```
@@ -122,7 +123,7 @@ minikube tunnel
 kubectl wait --for=condition=ready --timeout=600s --namespace=ecommerce pods --all
 ```
 
-### Abrir puertos para acceder a la observabilidad
+### Abrir puertos para acceder a la observabilidad (En diferentes terminales)
 ```bash
 kubectl port-forward svc/grafana 3000:80 -n mesh-observability
 kubectl port-forward svc/jaeger-query 16686:80 -n mesh-observability
